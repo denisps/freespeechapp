@@ -129,7 +129,7 @@ See [ADMIN_SCRIPT.md](ADMIN_SCRIPT.md) for detailed documentation.
 
 - All communication is encrypted using TLS/SSL
 - Self-signed certificates valid for 100 years (non-expiring for practical purposes)
-- Secure WebSocket (WSS) protocol
+- HTTP polling over HTTPS for secure, real-time communication
 - Can be deployed with custom certificates from trusted CAs
 
 ## Use Cases

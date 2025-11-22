@@ -31,6 +31,10 @@
             text-align: center;
             position: relative;
             overflow: hidden;
+            background-image: url('hero-image.svg');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: overlay;
         }
 
         .hero::before {
@@ -255,7 +259,7 @@
 
     <div class="hero">
         <div class="hero-content">
-            <h1>🔒 FreeSpeechApp</h1>
+            <h1>FreeSpeechApp</h1>
             <p class="tagline">Secure, Decentralized Communication for the Free Web</p>
             <p>Open source platform for safe messaging over untrusted networks</p>
         </div>
@@ -269,6 +273,13 @@
                 Built with zero external dependencies and Cloudflare compatibility, it enables safe, real-time messaging 
                 over untrusted networks without compromising on simplicity or security.
             </p>
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; margin: 30px auto; max-width: 800px; border-radius: 8px;">
+                <p style="margin: 0; color: #856404; font-size: 1em;">
+                    <strong>⚖️ Content Disclaimer:</strong> This platform does not host, store, or moderate any user content. 
+                    FreeSpeechApp only facilitates peer-to-peer communication between individuals. All messages are ephemeral 
+                    and retained in memory for only 30 seconds. Users are solely responsible for the content they share.
+                </p>
+            </div>
         </div>
 
         <div class="section">

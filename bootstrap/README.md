@@ -19,7 +19,7 @@ The bootstrap scripts automate the entire server setup process:
 3. **Install Dependencies** - Installs required Node.js packages
 4. **Generate SSL Certificates** - Creates a self-signed certificate valid for 100 years (non-expiring)
 5. **Create systemd Service** - Sets up FreeSpeechApp as a system service
-6. **Configure Firewall** - Opens port 8443 for HTTPS/WSS connections
+6. **Configure Firewall** - Opens port 443 (or configured port) for HTTPS connections
 7. **Start Service** - Starts the server automatically
 
 ## Quick Start
@@ -120,17 +120,17 @@ sudo journalctl -u freespeechapp -f
 
 ### Server Access
 
-- Server URL: `wss://your-server-ip:8443`
-- Health check: `https://your-server-ip:8443/health`
+- Server URL: `https://your-server-ip` (or `https://your-server-ip:443`)
+- Health check: `https://your-server-ip/health`
 - Certificate location: `/opt/freespeechapp/server/certs/`
 
 ### Connecting Clients
 
 1. Open the client application (`client/index.html`)
-2. Enter the server URL: `wss://your-server-ip:8443`
+2. Enter the server URL: `https://your-server-ip`
 3. Click "Connect"
 
-Note: You may need to accept the self-signed certificate in your browser first by visiting `https://your-server-ip:8443/health`
+Note: You may need to accept the self-signed certificate in your browser first by visiting `https://your-server-ip/health`
 
 ## SSL Certificates
 

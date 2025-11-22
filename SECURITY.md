@@ -20,7 +20,7 @@
 
 ### Transport Security
 - **HTTPS/TLS**: All communication uses HTTPS with TLS encryption
-- **WebSocket Secure (WSS)**: WebSocket connections use secure WSS protocol
+- **HTTP Polling**: Secure polling over HTTPS for real-time communication
 - **Self-Signed Certificates**: Generated with 4096-bit RSA keys
 - **Certificate Validity**: 100 years (36,500 days) - non-expiring for practical purposes
 
@@ -103,7 +103,7 @@ For production deployments, we recommend:
    - In production, use proper CA-signed certificates
 
 2. **Secure Connections**:
-   - Always use WSS (not WS) connections
+   - Always use HTTPS (not HTTP) connections
    - Verify the server URL before connecting
    - Don't ignore certificate errors in production
 

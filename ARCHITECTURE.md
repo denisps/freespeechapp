@@ -2,7 +2,7 @@
 
 ## System Overview
 
-FreeSpeechApp is a secure, decentralized communication platform built for safe messaging over untrusted networks.
+FreeSpeechApp is a secure, decentralized communication platform built for safe messaging over untrusted networks using HTTP polling.
 
 ## Architecture Diagram
 
@@ -20,8 +20,8 @@ FreeSpeechApp is a secure, decentralized communication platform built for safe m
 │  style.css   │                                    │  style.css   │
 └──────┬───────┘                                    └───────┬──────┘
        │                                                    │
-       │ WSS (Secure WebSocket)                           │
-       │ TLS/SSL Encrypted                                │
+       │ HTTPS (HTTP Polling)                              │
+       │ TLS/SSL Encrypted                                 │
        │                                                    │
        └────────────────┬──────────────┬───────────────────┘
                         │              │
@@ -31,8 +31,8 @@ FreeSpeechApp is a secure, decentralized communication platform built for safe m
                  │    (Node.js + HTTPS)     │
                  │                          │
                  │  ┌────────────────────┐  │
-                 │  │  WebSocket Server  │  │
-                 │  │   (ws library)     │  │
+                 │  │  HTTP Polling API  │  │
+                 │  │  (REST endpoints)  │  │
                  │  └────────────────────┘  │
                  │                          │
                  │  ┌────────────────────┐  │
@@ -45,7 +45,7 @@ FreeSpeechApp is a secure, decentralized communication platform built for safe m
                  │  │  (server.crt/key)  │  │
                  │  └────────────────────┘  │
                  │                          │
-                 │  Port: 8443             │
+                 │  Port: 443 (or 80)      │
                  └──────────────────────────┘
                            ▲
                            │
@@ -82,25 +82,24 @@ FreeSpeechApp is a secure, decentralized communication platform built for safe m
 
 **Files:**
 - `client/index.html` - Main application UI
-- `client/app.js` - WebSocket client logic
+- `client/app.js` - HTTP polling client logic
 - `client/style.css` - Responsive styling
 
 ### 2. Server (Node.js Application)
 
 **Technology Stack:**
 - Node.js (v14+)
-- Native HTTPS module
-- ws library (WebSocket implementation)
+- Native HTTPS/HTTP modules (zero external dependencies)
 
 **Components:**
 - **HTTPS Server**: Handles TLS/SSL encryption
-- **WebSocket Server**: Manages real-time connections
+- **HTTP Polling API**: REST endpoints for real-time communication
 - **Client Manager**: Tracks connected clients
 - **Message Router**: Routes broadcast and direct messages
 
 **Files:**
 - `server/server.js` - Main server application
-- `server/package.json` - Dependencies and metadata
+- `server/package.json` - Zero dependencies
 
 ### 3. Bootstrap (Deployment Automation)
 
@@ -132,11 +131,9 @@ FreeSpeechApp is a secure, decentralized communication platform built for safe m
 ```
 Client                          Server
   │                              │
-  ├─── WSS Connection Request ───▶
+  ├─── POST /connect ────────────▶
   │                              │
-  │◀─── Upgrade to WebSocket ────┤
-  │                              │
-  │◀──── Welcome Message ─────────┤
+  │◀─── Client ID response ──────┤
   │      (with Client ID)         │
   │                              │
 ```
@@ -146,8 +143,11 @@ Client                          Server
 ```
 Client A                 Server                  Client B
   │                       │                        │
-  ├─ Broadcast Message ──▶│                        │
-  │                       ├─ Route to all ────────▶│
+  ├─ POST /send ─────────▶│                        │
+  │  (broadcast)          ├─ Store message ───────▶│
+  │                       │                        │
+  │                       │     GET /poll ─────────┤
+  │                       ├─ Return messages ──────▶│
   │                       │                        │
 ```
 
@@ -156,8 +156,11 @@ Client A                 Server                  Client B
 ```
 Client A                 Server                  Client B
   │                       │                        │
-  ├─ Direct Message ─────▶│                        │
-  │   (to: Client B)      ├─ Route to Client B ──▶│
+  ├─ POST /send ─────────▶│                        │
+  │   (to: Client B)      ├─ Store message ───────▶│
+  │                       │                        │
+  │                       │     GET /poll ─────────┤
+  │                       ├─ Route to Client B ────▶│
   │                       │                        │
 ```
 
