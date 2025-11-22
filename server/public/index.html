@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FreeSpeechApp - Secure, decentralized communication platform for safe messaging over untrusted networks. Zero dependencies, Cloudflare compatible, open source.">
+    <meta name="keywords" content="secure communication, decentralized, web3, encrypted messaging, privacy, open source, Cloudflare compatible">
+    <meta name="author" content="FreeSpeechApp Contributors">
+    <meta property="og:title" content="FreeSpeechApp - Secure Communication Platform">
+    <meta property="og:description" content="Open source, decentralized communication platform with zero dependencies">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://freespeechapp.org/">
+    <title>FreeSpeechApp - Secure Communication Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            background-image: url('hero-image.svg');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: overlay;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 90%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .hero .tagline {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+
+        .warning-banner {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+        }
+
+        .section h2 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #667eea;
+            text-align: center;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .cta-section {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 60px 20px;
+            border-radius: 12px;
+        }
+
+        .cta-section h2 {
+            margin-bottom: 20px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .tech-stack {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .tech-item {
+            text-align: center;
+        }
+
+        .tech-item .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .powered-by {
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+
+            .hero .tagline {
+                font-size: 1.2em;
+            }
+
+            .section h2 {
+                font-size: 2em;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="warning-banner">
+        ⚠️ This project is currently under active development. API endpoints are disabled until public release.
+    </div>
+
+    <div class="hero">
+        <div class="hero-content">
+            <h1>FreeSpeechApp</h1>
+            <p class="tagline">Secure, Decentralized Communication for the Free Web</p>
+            <p>Open source platform for safe messaging over untrusted networks</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>What is FreeSpeechApp?</h2>
+            <p style="text-align: center; font-size: 1.2em; color: #666; max-width: 800px; margin: 0 auto;">
+                FreeSpeechApp is a lightweight, secure communication platform designed for the decentralized web. 
+                Built with zero external dependencies and Cloudflare compatibility, it enables safe, real-time messaging 
+                over untrusted networks without compromising on simplicity or security.
+            </p>
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; margin: 30px auto; max-width: 800px; border-radius: 8px;">
+                <p style="margin: 0; color: #856404; font-size: 1em;">
+                    <strong>⚖️ Content Disclaimer:</strong> This platform does not host, store, or moderate any user content. 
+                    FreeSpeechApp only facilitates peer-to-peer communication between individuals. All messages are ephemeral 
+                    and retained in memory for only 30 seconds. Users are solely responsible for the content they share.
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key Features</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <div class="icon">🚀</div>
+                    <h3>Zero Dependencies</h3>
+                    <p>Built entirely with Node.js built-in modules. No npm packages, no vulnerabilities, no supply chain risks.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">☁️</div>
+                    <h3>Cloudflare Compatible</h3>
+                    <p>Works seamlessly with Cloudflare's free tier using HTTP polling instead of WebSockets.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">🔐</div>
+                    <h3>Secure by Design</h3>
+                    <p>HTTPS/TLS encryption, automatic certificate generation, and secure communication protocols.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">⚡</div>
+                    <h3>Real-time Messaging</h3>
+                    <p>HTTP polling with 2-second intervals provides near real-time communication with minimal overhead.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">🌍</div>
+                    <h3>Self-Hostable</h3>
+                    <p>Deploy on your own infrastructure with automated installation scripts for multiple Linux distributions.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">📱</div>
+                    <h3>Modern Web Client</h3>
+                    <p>Responsive, zero-dependency client that works in any modern browser without frameworks.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Technology Stack</h2>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <div class="badge">Node.js</div>
+                    <p>Server Runtime</p>
+                </div>
+                <div class="tech-item">
+                    <div class="badge">Vanilla JS</div>
+                    <p>Client-side</p>
+                </div>
+                <div class="tech-item">
+                    <div class="badge">HTTP Polling</div>
+                    <p>Communication</p>
+                </div>
+                <div class="tech-item">
+                    <div class="badge">HTTPS/TLS</div>
+                    <p>Encryption</p>
+                </div>
+                <div class="tech-item">
+                    <div class="badge">Systemd</div>
+                    <p>Service Manager</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>Get Involved</h2>
+            <p style="font-size: 1.2em; color: #666; margin-bottom: 20px;">
+                FreeSpeechApp is open source and welcomes contributions from developers worldwide.
+            </p>
+            <div class="cta-buttons">
+                <a href="https://github.com/denisps/freespeechapp" class="btn btn-primary" target="_blank">
+                    View on GitHub
+                </a>
+                <a href="https://github.com/denisps/freespeechapp/issues" class="btn btn-secondary" target="_blank">
+                    Contribute Ideas
+                </a>
+            </div>
+            <p style="margin-top: 30px; color: #666;">
+                ⭐ Star us on GitHub • 🐛 Report Issues • 💡 Suggest Features • 🤝 Submit Pull Requests
+            </p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 FreeSpeechApp Contributors. Open Source Project.</p>
+        <p style="margin-top: 10px;">
+            <a href="https://github.com/denisps/freespeechapp">GitHub</a> • 
+            <a href="https://github.com/denisps/freespeechapp/blob/main/LICENSE">License</a> • 
+            <a href="https://github.com/denisps/freespeechapp/blob/main/SECURITY.md">Security</a>
+        </p>
+        <p class="powered-by">
+            Powered by <a href="https://freespeechapp.org/">freespeechapp.org</a>
+        </p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Server
+server/certs/
+*.log
+
+# Environment
+.env
+.env.local
+
+# Admin script config (contains credentials)
+freespeech-admin.conf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp

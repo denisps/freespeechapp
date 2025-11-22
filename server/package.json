@@ -1,0 +1,15 @@
+{
+  "name": "freespeechapp-server",
+  "version": "1.0.0",
+  "description": "Secure communication server for FreeSpeechApp",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node test.js"
+  },
+  "keywords": ["secure", "communication", "web3", "decentralized"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {}
+}
