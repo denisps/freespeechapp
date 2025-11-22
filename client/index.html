@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreeSpeechApp - Secure Communication</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 FreeSpeechApp</h1>
+            <p class="tagline">Secure communication over untrusted internet</p>
+        </header>
+        
+        <div class="connection-section">
+            <div class="connection-status" id="status">
+                <span class="status-indicator" id="statusIndicator">⚫</span>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <div class="connection-controls">
+                <input type="text" id="serverUrl" placeholder="wss://localhost:8443" value="wss://localhost:8443">
+                <button id="connectBtn" onclick="connect()">Connect</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+            </div>
+            <div class="client-info" id="clientInfo"></div>
+        </div>
+        
+        <div class="messages-section">
+            <h2>Messages</h2>
+            <div class="messages" id="messages"></div>
+        </div>
+        
+        <div class="input-section">
+            <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea>
+            <div class="message-controls">
+                <select id="messageType">
+                    <option value="broadcast">Broadcast to All</option>
+                    <option value="direct">Direct Message</option>
+                </select>
+                <input type="text" id="recipientId" placeholder="Recipient ID" style="display: none;">
+                <button onclick="sendMessage()">Send Message</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
