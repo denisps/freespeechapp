@@ -86,10 +86,15 @@ wss.on('connection', (ws, req) => {
 });
 
 function generateClientId() {
-  return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `client_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 function broadcastMessage(senderId, message) {
+  if (!message.content) {
+    console.error('Invalid message: missing content');
+    return;
+  }
+  
   const broadcastData = JSON.stringify({
     type: 'message',
     from: senderId,
@@ -105,6 +110,11 @@ function broadcastMessage(senderId, message) {
 }
 
 function sendDirectMessage(recipientId, message) {
+  if (!message.from || !message.content) {
+    console.error('Invalid message: missing from or content');
+    return;
+  }
+  
   const recipient = clients.get(recipientId);
   if (recipient && recipient.readyState === WebSocket.OPEN) {
     recipient.send(JSON.stringify({

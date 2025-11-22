@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-REPO_URL="https://github.com/denisps/freespeechapp.git"
+REPO_URL="${REPO_URL:-https://github.com/denisps/freespeechapp.git}"
 INSTALL_DIR="/opt/freespeechapp"
 SERVICE_NAME="freespeechapp"
 NODE_VERSION="18"

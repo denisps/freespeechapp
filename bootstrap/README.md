@@ -267,9 +267,14 @@ sudo /opt/freespeechapp/bootstrap/generate-certs.sh
 ## Security Considerations
 
 - The self-signed certificate will show a warning in browsers. For production, consider using Let's Encrypt or another CA.
-- The server runs as root by default. Consider creating a dedicated user for better security.
+- **The server runs as root by default for simplicity**. For production deployments, it's recommended to:
+  1. Create a dedicated user: `sudo useradd -r -s /bin/false freespeechapp`
+  2. Change ownership: `sudo chown -R freespeechapp:freespeechapp /opt/freespeechapp`
+  3. Update the service file to run as that user: `User=freespeechapp`
+  4. Use port forwarding (e.g., iptables) to redirect port 443 to 8443
 - Configure your firewall to only allow connections from trusted IPs if needed.
 - Regularly update Node.js and dependencies for security patches.
+- The REPO_URL can be overridden with an environment variable for forks: `REPO_URL=https://your-repo.git sudo -E ./install.sh`
 
 ## Script Files
 
