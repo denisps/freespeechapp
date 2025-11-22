@@ -10,6 +10,9 @@ server/certs/
 .env
 .env.local
 
+# Admin script config (contains credentials)
+freespeech-admin.conf
+
 # OS
 .DS_Store
 Thumbs.db

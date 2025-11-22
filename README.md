@@ -8,21 +8,24 @@ FreeSpeechApp is a secure, decentralized communication platform designed for saf
 
 ## Architecture
 
-The application consists of three main components:
+The application consists of four main components:
 
 ### 1. Server (`/server`)
-- Node.js application with WebSocket support
-- HTTPS/WSS secure communication
+- Node.js application with HTTP polling (no WebSockets)
+- HTTPS secure communication
+- Zero external dependencies
 - Broadcast and direct messaging capabilities
 - Health monitoring endpoint
+- Cloudflare compatible
 - See [server/README.md](server/README.md) for details
 
 ### 2. Client (`/client`)
 - Modern web-based interface
-- Real-time communication
+- HTTP polling for real-time communication
 - Connection status monitoring
 - Support for broadcast and direct messages
 - Responsive design
+- Zero external dependencies
 - See [client/README.md](client/README.md) for details
 
 ### 3. Bootstrap Scripts (`/bootstrap`)
@@ -33,6 +36,14 @@ The application consists of three main components:
 - Systemd service configuration
 - Firewall setup
 - See [bootstrap/README.md](bootstrap/README.md) for details
+
+### 4. Admin Deployment Script (`admin-deploy.sh`)
+- Remote server management from admin machine
+- Configuration file with server credentials
+- Status checking and update detection
+- Interactive menu for common tasks
+- Simple Unix shell (POSIX compatible)
+- See [ADMIN_SCRIPT.md](ADMIN_SCRIPT.md) for details
 
 ## Quick Start
 
@@ -55,12 +66,31 @@ curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstra
 curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install-fedora.sh | sudo bash
 ```
 
+### Admin Deployment (Remote Management)
+
+Manage remote servers from your admin machine:
+
+1. **Create configuration:**
+   ```bash
+   cp freespeech-admin.conf.sample freespeech-admin.conf
+   nano freespeech-admin.conf  # Edit with your server details
+   ```
+
+2. **Run admin script:**
+   ```bash
+   ./admin-deploy.sh
+   ```
+
+The script will check server status, detect updates, and provide an interactive menu for management.
+
+See [ADMIN_SCRIPT.md](ADMIN_SCRIPT.md) for detailed documentation.
+
 ### Manual Setup
 
-1. **Install dependencies:**
+1. **No dependencies to install!**
    ```bash
    cd server
-   npm install
+   # No npm install needed - zero dependencies!
    ```
 
 2. **Generate certificates:**
@@ -72,19 +102,22 @@ curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstra
 3. **Start server:**
    ```bash
    cd server
-   npm start
+   node server.js
    ```
 
 4. **Open client:**
-   Open `client/index.html` in a web browser and connect to `wss://localhost:8443`
+   Open `client/index.html` in a web browser and connect to `https://localhost:8443`
 
 ## Features
 
-- ✅ End-to-end encrypted communication (WSS/HTTPS)
-- ✅ Real-time messaging via WebSockets
+- ✅ Encrypted communication (HTTPS/TLS)
+- ✅ Real-time messaging via HTTP polling
+- ✅ Zero external dependencies
+- ✅ Cloudflare compatible (free plan)
 - ✅ Broadcast and direct messaging
 - ✅ Self-signed certificates (100-year validity)
 - ✅ Automatic server deployment scripts
+- ✅ Remote admin management script
 - ✅ Systemd service integration
 - ✅ Multi-distribution support
 - ✅ Modern, responsive web interface
@@ -110,7 +143,9 @@ curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstra
 - [Server Documentation](server/README.md)
 - [Client Documentation](client/README.md)
 - [Bootstrap Scripts Guide](bootstrap/README.md)
-- [Architecture Overview](ARCHITECTURE.md)
+- [Admin Deployment Script](ADMIN_SCRIPT.md)
+- [Architecture Overview](ARCHITECTURE_OVERVIEW.md)
+- [Review Guide](REVIEW_GUIDE.md)
 - [Security Summary](SECURITY.md)
 
 ## Requirements
@@ -121,8 +156,13 @@ curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstra
 - OpenSSL (for certificate generation)
 
 ### Client
-- Modern web browser with WebSocket support
+- Modern web browser with Fetch API support
 - JavaScript enabled
+
+### Admin Machine (for remote management)
+- Unix/Linux/macOS
+- SSH client
+- `sshpass` (optional, for password authentication)
 
 ## Service Management
 

@@ -1,0 +1,20 @@
+# FreeSpeechApp Admin Configuration
+# Copy this to freespeech-admin.conf and edit values
+
+# Server connection details
+SERVER_HOST="your-server.com"
+SERVER_USER="root"
+SERVER_PORT="22"
+SERVER_PASSWORD=""  # Optional - leave empty to use SSH key (recommended)
+
+# Server type: nodejs or php
+SERVER_TYPE="nodejs"
+
+# Resource limits
+STORAGE_LIMIT="10G"  # Disk space limit
+RAM_LIMIT="1G"       # RAM limit for the application
+
+# Application settings
+APP_PORT="8443"
+INSTALL_DIR="/opt/freespeechapp"
+REPO_URL="https://github.com/denisps/freespeechapp.git"
