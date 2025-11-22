@@ -10,7 +10,5 @@
   "keywords": ["secure", "communication", "web3", "decentralized"],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "ws": "^8.17.1"
-  }
+  "dependencies": {}
 }
