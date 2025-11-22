@@ -110,6 +110,8 @@ curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstra
 - [Server Documentation](server/README.md)
 - [Client Documentation](client/README.md)
 - [Bootstrap Scripts Guide](bootstrap/README.md)
+- [Architecture Overview](ARCHITECTURE.md)
+- [Security Summary](SECURITY.md)
 
 ## Requirements
 
