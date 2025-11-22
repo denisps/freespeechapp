@@ -4,11 +4,12 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const PORT = process.env.PORT || 8443;
+const PORT = process.env.PORT || 443;
 const USE_HTTPS = process.env.USE_HTTPS !== 'false';
 const CERT_PATH = process.env.CERT_PATH || path.join(__dirname, 'certs');
 const MESSAGE_RETENTION_TIME = 30000; // 30 seconds
 const MAX_MESSAGES = 100;
+const API_ENABLED = process.env.API_ENABLED === 'true'; // API disabled by default
 
 // In-memory storage
 const messages = [];
@@ -82,6 +83,25 @@ function cleanOldMessages() {
 // Run cleanup every 10 seconds
 setInterval(cleanOldMessages, 10000);
 
+// Serve home page
+function serveHomePage(res) {
+  const homePath = path.join(__dirname, 'public', 'index.html');
+  
+  fs.readFile(homePath, 'utf8', (err, content) => {
+    if (err) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Home page not found');
+      return;
+    }
+    
+    res.writeHead(200, { 
+      'Content-Type': 'text/html',
+      'Cache-Control': 'public, max-age=300'
+    });
+    res.end(content);
+  });
+}
+
 // Request handler
 function handleRequest(req, res) {
   const parsedUrl = url.parse(req.url, true);
@@ -93,13 +113,29 @@ function handleRequest(req, res) {
     return;
   }
   
-  // Health check
+  // Serve home page
+  if (pathname === '/' && req.method === 'GET') {
+    serveHomePage(res);
+    return;
+  }
+  
+  // Check if API is enabled
+  if (!API_ENABLED && pathname !== '/health') {
+    sendJSON(res, 503, { 
+      error: 'API is currently disabled. The service is under development.',
+      message: 'Please visit https://github.com/denisps/freespeechapp for more information.'
+    });
+    return;
+  }
+  
+  // Health check (always enabled)
   if (pathname === '/health' && req.method === 'GET') {
     sendJSON(res, 200, {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       clients: clients.size,
-      messages: messages.length
+      messages: messages.length,
+      apiEnabled: API_ENABLED
     });
     return;
   }

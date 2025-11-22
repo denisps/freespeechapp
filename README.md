@@ -2,9 +2,11 @@
 
 WebApp for safe communication over untrusted internet. It is a cornerstone for decentralized web3 apps.
 
+🌐 **Live Demo:** [https://freespeechapp.org/](https://freespeechapp.org/)
+
 ## Overview
 
-FreeSpeechApp is a secure, decentralized communication platform designed for safe messaging over untrusted networks. It uses WebSocket Secure (WSS) protocol over HTTPS to ensure encrypted communication.
+FreeSpeechApp is a secure, decentralized communication platform designed for safe messaging over untrusted networks. Built with zero external dependencies and HTTP polling for maximum compatibility with CDNs like Cloudflare.
 
 ## Architecture
 
