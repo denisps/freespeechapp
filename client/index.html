@@ -4,46 +4,869 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FreeSpeechApp - Secure Communication</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .toolbar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .toolbar-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .mode-section {
+            padding: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .mode-section h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .mode-description {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .mode-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .mode-controls input[type="text"],
+        .mode-controls input[type="password"] {
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .mode-controls textarea {
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .mode-controls button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+            align-self: flex-start;
+        }
+
+        .mode-controls button:hover {
+            background: #5568d3;
+        }
+
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        #app-area {
+            padding: 20px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 1.1em;
+        }
+
+        .status-indicator {
+            font-size: 1.5em;
+        }
+
+        .gateway-wrapper {
+            margin: 20px 0;
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .gateway-warning {
+            background: #ff6b6b;
+            color: white;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: bold;
+        }
+
+        .gateway-btn {
+            padding: 6px 12px;
+            background: white;
+            color: #ff6b6b;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+            margin-left: auto;
+        }
+
+        .gateway-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .gateway-btn:first-of-type {
+            margin-left: auto;
+        }
+
+        #gateway-frame {
+            width: 100%;
+            height: 300px;
+            border: none;
+        }
+
+        #app-content {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+            min-height: 200px;
+        }
+
+        .peer-status {
+            padding: 10px;
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        #test-results {
+            padding: 20px;
+            background: #f8f9fa;
+            margin: 20px;
+            border-radius: 8px;
+        }
+
+        #test-results h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        #test-output {
+            font-family: monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .test-passed {
+            color: #28a745;
+            padding: 5px 0;
+        }
+
+        .test-failed {
+            color: #dc3545;
+            padding: 5px 0;
+        }
+
+        .test-section {
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .test-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+            }
+            
+            header h1 {
+                font-size: 1.8em;
+            }
+            
+            .toolbar {
+                position: static;
+                margin-top: 15px;
+            }
+            
+            .mode-section {
+                padding: 20px;
+            }
+            
+            .gateway-warning {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .gateway-btn {
+                margin-left: 0 !important;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .mode-section {
+            animation: slideIn 0.3s ease;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🔒 FreeSpeechApp</h1>
-            <p class="tagline">Secure communication over untrusted internet</p>
+            <p class="tagline">Secure, privacy-focused communication</p>
+            <div class="toolbar">
+                <button id="run-tests" class="toolbar-btn">Run Tests</button>
+            </div>
         </header>
         
-        <div class="connection-section">
+        <!-- Mode 1: Run Stateless App -->
+        <div class="mode-section" id="mode-stateless">
+            <h2>Run Stateless App</h2>
+            <p class="mode-description">Use temporary identity for one-time secure communications</p>
+            <div class="mode-controls">
+                <input type="text" id="appId-stateless" placeholder="App ID (ECDSA public key)" class="app-id-input">
+                <button onclick="startStatelessApp()">Start Session</button>
+            </div>
+        </div>
+        
+        <!-- Mode 2: Generate Identity File -->
+        <div class="mode-section" id="mode-generate">
+            <h2>Generate Identity File</h2>
+            <p class="mode-description">Create a password-protected persistent identity</p>
+            <div class="mode-controls">
+                <input type="password" id="password-generate" placeholder="Enter password" class="password-input">
+                <button onclick="generateIdentity()">Generate Identity</button>
+            </div>
+        </div>
+        
+        <!-- Mode 3: Provide More FreeSpeech Gateways -->
+        <div class="mode-section" id="mode-gateways">
+            <h2>Provide More FreeSpeech Gateways</h2>
+            <p class="mode-description">Configure gateway servers for distributed trust</p>
+            <div class="mode-controls">
+                <textarea id="gateway-list" placeholder="Enter gateway URLs (one per line)&#10;https://gateway1.example.com&#10;https://gateway2.example.com" rows="5"></textarea>
+                <button onclick="saveGateways()">Save Gateways</button>
+            </div>
+            <div id="gateway-status" class="status-message"></div>
+        </div>
+        
+        <!-- Mode 4: Run Stateful App (only visible in identity files) -->
+        <div class="mode-section" id="mode-stateful" style="display: none;">
+            <h2>Run Stateful App</h2>
+            <p class="mode-description">Use your persistent identity</p>
+            <div class="mode-controls">
+                <input type="text" id="appId-stateful" placeholder="App ID (ECDSA public key)" class="app-id-input">
+                <input type="password" id="password-stateful" placeholder="Password to unlock identity" class="password-input">
+                <button onclick="startStatefulApp()">Unlock and Start</button>
+            </div>
+        </div>
+        
+        <!-- App running area (hidden by default) -->
+        <div id="app-area" style="display: none;">
             <div class="connection-status" id="status">
                 <span class="status-indicator" id="statusIndicator">⚫</span>
-                <span id="statusText">Disconnected</span>
+                <span id="statusText">Initializing...</span>
             </div>
-            <div class="connection-controls">
-                <input type="text" id="serverUrl" placeholder="https://localhost:8443" value="https://localhost:8443">
-                <button id="connectBtn" onclick="connect()">Connect</button>
-                <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
-            </div>
-            <div class="client-info" id="clientInfo"></div>
+            <div id="gateway-container"></div>
+            <div id="app-content"></div>
+            <div id="peer-info"></div>
         </div>
         
-        <div class="messages-section">
-            <h2>Messages</h2>
-            <div class="messages" id="messages"></div>
-        </div>
-        
-        <div class="input-section">
-            <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea>
-            <div class="message-controls">
-                <select id="messageType">
-                    <option value="broadcast">Broadcast to All</option>
-                    <option value="direct">Direct Message</option>
-                </select>
-                <input type="text" id="recipientId" placeholder="Recipient ID" style="display: none;">
-                <button onclick="sendMessage()">Send Message</button>
-            </div>
+        <!-- Test results area -->
+        <div id="test-results" style="display: none;">
+            <h2>Test Results</h2>
+            <div id="test-output"></div>
         </div>
     </div>
     
-    <script src="app.js"></script>
+    <!-- Identity data placeholder (will be populated in generated identity files) -->
+    <script id="identity-data" type="application/json"></script>
+    
+    <script>
+        // FreeSpeechApp Client - Main Application Logic
+        // Implements WebRTC P2P communication with cryptographic identity management
+
+        // Global state
+        let appState = {
+            userId: null,
+            aesKey: null,
+            appId: null,
+            gateways: ['https://gateway1.example.com', 'https://gateway2.example.com'],
+            currentGatewayIndex: 0,
+            gatewayFrame: null,
+            peers: [],
+            minPeers: 3,
+            maxPeers: 20,
+            appContent: null,
+            isStateful: false
+        };
+
+        const PBKDF2_ITERATIONS = 100000;
+        const AES_KEY_LENGTH = 256;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkForIdentityData();
+            loadGateways();
+        });
+
+        function checkForIdentityData() {
+            const identityDataEl = document.getElementById('identity-data');
+            if (identityDataEl && identityDataEl.textContent.trim()) {
+                try {
+                    const identityData = JSON.parse(identityDataEl.textContent);
+                    if (identityData.salt && identityData.cryptoBox) {
+                        document.getElementById('mode-stateful').style.display = 'block';
+                        appState.isStateful = true;
+                        if (identityData.gateways) {
+                            appState.gateways = identityData.gateways;
+                        }
+                    }
+                } catch (e) {
+                    console.log('No identity data found');
+                }
+            }
+        }
+
+        function loadGateways() {
+            const stored = localStorage.getItem('freespeech-gateways');
+            if (stored) {
+                try {
+                    appState.gateways = JSON.parse(stored);
+                } catch (e) {
+                    console.error('Failed to load gateways:', e);
+                }
+            }
+        }
+
+        async function startStatelessApp() {
+            const appId = document.getElementById('appId-stateless').value.trim();
+            if (!appId) {
+                showStatus('error', 'Please enter an App ID');
+                return;
+            }
+            
+            try {
+                showStatus('connecting', 'Generating temporary User ID...');
+                const userId = await generateECDSAKeyPair();
+                appState.userId = userId;
+                appState.appId = appId;
+                await startApp();
+            } catch (err) {
+                showStatus('error', `Failed to start: ${err.message}`);
+                console.error('Stateless app error:', err);
+            }
+        }
+
+        async function generateIdentity() {
+            const password = document.getElementById('password-generate').value;
+            if (!password) {
+                showStatus('error', 'Please enter a password');
+                return;
+            }
+            
+            try {
+                showStatus('connecting', 'Generating identity...');
+                
+                const userId = await generateECDSAKeyPair();
+                const aesKey = await generateAESKey();
+                
+                const userIdPrivateKeyJwk = await crypto.subtle.exportKey('jwk', userId.privateKey);
+                const aesKeyRaw = await crypto.subtle.exportKey('raw', aesKey);
+                
+                const keysData = {
+                    userIdPrivateKey: JSON.stringify(userIdPrivateKeyJwk),
+                    aesKey: arrayBufferToBase64(aesKeyRaw)
+                };
+                
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const encryptionKey = await deriveKeyFromPassword(password, salt);
+                const keysJson = JSON.stringify(keysData);
+                const cryptoBox = await encryptData(keysJson, encryptionKey);
+                
+                const identityData = {
+                    salt: arrayBufferToBase64(salt),
+                    cryptoBox: arrayBufferToBase64(cryptoBox),
+                    gateways: appState.gateways,
+                    version: '1.0'
+                };
+                
+                const currentHtml = document.documentElement.outerHTML;
+                const identityJson = JSON.stringify(identityData, null, 2);
+                const newHtml = currentHtml.replace(
+                    /<script id="identity-data" type="application\/json"><\/script>/,
+                    `<script id="identity-data" type="application/json">\n${identityJson}\n    <\/script>`
+                );
+                
+                const blob = new Blob([newHtml], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'freespeech-identity.html';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showStatus('connected', 'Identity file generated and downloaded!');
+                
+            } catch (err) {
+                showStatus('error', `Failed to generate identity: ${err.message}`);
+                console.error('Identity generation error:', err);
+            }
+        }
+
+        function saveGateways() {
+            const gatewayText = document.getElementById('gateway-list').value;
+            const lines = gatewayText.split('\n').map(l => l.trim()).filter(l => l);
+            
+            if (lines.length === 0) {
+                document.getElementById('gateway-status').textContent = 'Please enter at least one gateway URL';
+                return;
+            }
+            
+            appState.gateways = lines;
+            localStorage.setItem('freespeech-gateways', JSON.stringify(lines));
+            
+            document.getElementById('gateway-status').textContent = `Saved ${lines.length} gateway(s)`;
+            document.getElementById('gateway-status').style.color = 'green';
+            
+            setTimeout(() => {
+                document.getElementById('gateway-status').textContent = '';
+            }, 3000);
+        }
+
+        async function startStatefulApp() {
+            const appId = document.getElementById('appId-stateful').value.trim();
+            const password = document.getElementById('password-stateful').value;
+            
+            if (!appId) {
+                showStatus('error', 'Please enter an App ID');
+                return;
+            }
+            
+            if (!password) {
+                showStatus('error', 'Please enter your password');
+                return;
+            }
+            
+            try {
+                showStatus('connecting', 'Unlocking identity...');
+                
+                const identityDataEl = document.getElementById('identity-data');
+                const identityData = JSON.parse(identityDataEl.textContent);
+                
+                const salt = base64ToArrayBuffer(identityData.salt);
+                const decryptionKey = await deriveKeyFromPassword(password, salt);
+                const cryptoBoxBuffer = base64ToArrayBuffer(identityData.cryptoBox);
+                const decryptedJson = await decryptData(cryptoBoxBuffer, decryptionKey);
+                const keysData = JSON.parse(decryptedJson);
+                
+                const userIdPrivateKeyJwk = JSON.parse(keysData.userIdPrivateKey);
+                const userIdPrivateKey = await crypto.subtle.importKey(
+                    'jwk',
+                    userIdPrivateKeyJwk,
+                    { name: 'ECDSA', namedCurve: 'P-256' },
+                    true,
+                    ['sign']
+                );
+                
+                const userIdPublicKeyJwk = await crypto.subtle.exportKey('jwk', userIdPrivateKey);
+                delete userIdPublicKeyJwk.d;
+                userIdPublicKeyJwk.key_ops = ['verify'];
+                const userIdPublicKey = await crypto.subtle.importKey(
+                    'jwk',
+                    userIdPublicKeyJwk,
+                    { name: 'ECDSA', namedCurve: 'P-256' },
+                    true,
+                    ['verify']
+                );
+                
+                appState.userId = {
+                    privateKey: userIdPrivateKey,
+                    publicKey: userIdPublicKey
+                };
+                
+                const aesKeyRaw = base64ToArrayBuffer(keysData.aesKey);
+                appState.aesKey = await crypto.subtle.importKey(
+                    'raw',
+                    aesKeyRaw,
+                    { name: 'AES-GCM' },
+                    true,
+                    ['encrypt', 'decrypt']
+                );
+                
+                appState.appId = appId;
+                await startApp();
+                
+            } catch (err) {
+                showStatus('error', `Failed to unlock: ${err.message}`);
+                console.error('Stateful app error:', err);
+            }
+        }
+
+        async function startApp() {
+            document.querySelectorAll('.mode-section').forEach(el => el.style.display = 'none');
+            document.getElementById('app-area').style.display = 'block';
+            showStatus('connecting', 'Connecting to gateway...');
+            createGatewayIframe();
+        }
+
+        function createGatewayIframe() {
+            const container = document.getElementById('gateway-container');
+            
+            const gatewayDiv = document.createElement('div');
+            gatewayDiv.className = 'gateway-wrapper';
+            gatewayDiv.innerHTML = `
+                <div class="gateway-warning">
+                    ⚠️ Untrusted Gateway Content
+                    <button id="next-gateway" class="gateway-btn">Next Gateway →</button>
+                    <button id="close-gateway" class="gateway-btn">Close Gateway ✕</button>
+                </div>
+                <iframe 
+                    id="gateway-frame" 
+                    src="${appState.gateways[appState.currentGatewayIndex]}"
+                    sandbox="allow-scripts allow-same-origin"
+                    width="400"
+                    height="200"
+                    style="display: block; border: none;">
+                </iframe>
+            `;
+            
+            container.appendChild(gatewayDiv);
+            appState.gatewayFrame = document.getElementById('gateway-frame');
+            
+            document.getElementById('next-gateway').addEventListener('click', switchToNextGateway);
+            document.getElementById('close-gateway').addEventListener('click', closeGateway);
+            
+            window.addEventListener('message', handleGatewayMessage);
+            
+            setTimeout(() => {
+                // TODO: In production, specify actual gateway origin instead of '*'
+                // This is acceptable for testing with mock gateway
+                appState.gatewayFrame.contentWindow.postMessage({ type: 'ready' }, '*');
+            }, 1000);
+        }
+
+        function handleGatewayMessage(event) {
+            if (!event.data || !event.data.type) return;
+            console.log('Gateway message:', event.data);
+            
+            if (event.data.type === 'peers') {
+                handlePeerList(event.data.peers);
+            }
+        }
+
+        async function handlePeerList(peers) {
+            showStatus('connecting', `Received ${peers.length} peers, connecting...`);
+            const connectPromises = peers.slice(0, appState.maxPeers).map(peer => connectToPeer(peer));
+            
+            try {
+                await Promise.all(connectPromises);
+                
+                if (appState.peers.length >= appState.minPeers) {
+                    showStatus('connected', `Connected to ${appState.peers.length} peers`);
+                    await downloadAndVerifyApp();
+                    
+                    if (appState.gatewayFrame) {
+                        appState.gatewayFrame.style.display = 'none';
+                    }
+                }
+            } catch (err) {
+                showStatus('error', `Connection failed: ${err.message}`);
+            }
+        }
+
+        async function connectToPeer(peerInfo) {
+            try {
+                // TODO: Implement actual WebRTC peer connection in production
+                // Current implementation is a simplified mock for testing
+                // Production should:
+                // 1. Create RTCPeerConnection with proper configuration
+                // 2. Set remote description (SDP offer from peer)
+                // 3. Add ICE candidates
+                // 4. Create SDP answer and send back to gateway
+                // 5. Create RTCDataChannel for P2P communication
+                const peer = {
+                    id: peerInfo.id,
+                    connection: null,
+                    dataChannel: null
+                };
+                appState.peers.push(peer);
+            } catch (err) {
+                console.error('Peer connection error:', err);
+            }
+        }
+
+        async function downloadAndVerifyApp() {
+            showStatus('connecting', 'Downloading app content...');
+            
+            const mockAppContent = {
+                appId: appState.appId,
+                content: '<h2>Sample App Content</h2><p>This is a mock app.</p>',
+                signature: 'mock-signature',
+                version: '1.0'
+            };
+            
+            const isValid = await verifyAppSignature(mockAppContent);
+            
+            if (isValid) {
+                appState.appContent = mockAppContent;
+                showStatus('connected', 'App verified and loaded');
+                displayAppContent(mockAppContent.content);
+            } else {
+                showStatus('error', 'App signature verification failed');
+            }
+        }
+
+        async function verifyAppSignature(appContent) {
+            // TODO: Implement actual ECDSA signature verification in production
+            // Current implementation is a mock for testing purposes
+            // Production should:
+            // 1. Import appId as ECDSA public key
+            // 2. Verify signature of app content using the public key
+            // 3. Return false if verification fails
+            return true;
+        }
+
+        function displayAppContent(content) {
+            const appContentEl = document.getElementById('app-content');
+            appContentEl.innerHTML = content;
+            
+            document.getElementById('peer-info').innerHTML = `
+                <div class="peer-status">
+                    Connected to ${appState.peers.length} peer(s)
+                </div>
+            `;
+        }
+
+        function switchToNextGateway() {
+            appState.currentGatewayIndex = (appState.currentGatewayIndex + 1) % appState.gateways.length;
+            if (appState.gatewayFrame) {
+                appState.gatewayFrame.src = appState.gateways[appState.currentGatewayIndex];
+            }
+        }
+
+        function closeGateway() {
+            const container = document.getElementById('gateway-container');
+            container.innerHTML = '';
+            appState.gatewayFrame = null;
+        }
+
+        async function generateECDSAKeyPair() {
+            const keyPair = await crypto.subtle.generateKey(
+                { name: 'ECDSA', namedCurve: 'P-256' },
+                true,
+                ['sign', 'verify']
+            );
+            return keyPair;
+        }
+
+        async function generateAESKey() {
+            const key = await crypto.subtle.generateKey(
+                { name: 'AES-GCM', length: AES_KEY_LENGTH },
+                true,
+                ['encrypt', 'decrypt']
+            );
+            return key;
+        }
+
+        async function deriveKeyFromPassword(password, salt) {
+            const encoder = new TextEncoder();
+            const passwordBuffer = encoder.encode(password);
+            
+            const passwordKey = await crypto.subtle.importKey(
+                'raw',
+                passwordBuffer,
+                'PBKDF2',
+                false,
+                ['deriveBits', 'deriveKey']
+            );
+            
+            const derivedKey = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: PBKDF2_ITERATIONS,
+                    hash: 'SHA-256'
+                },
+                passwordKey,
+                { name: 'AES-GCM', length: 256 },
+                true,
+                ['encrypt', 'decrypt']
+            );
+            
+            return derivedKey;
+        }
+
+        async function encryptData(data, key) {
+            const encoder = new TextEncoder();
+            const dataBuffer = encoder.encode(data);
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            
+            const encrypted = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                dataBuffer
+            );
+            
+            const result = new Uint8Array(iv.length + encrypted.byteLength);
+            result.set(iv, 0);
+            result.set(new Uint8Array(encrypted), iv.length);
+            
+            return result.buffer;
+        }
+
+        async function decryptData(encryptedBuffer, key) {
+            const encryptedArray = new Uint8Array(encryptedBuffer);
+            const iv = encryptedArray.slice(0, 12);
+            const data = encryptedArray.slice(12);
+            
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                data
+            );
+            
+            const decoder = new TextDecoder();
+            return decoder.decode(decrypted);
+        }
+
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function showStatus(status, text) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            statusText.textContent = text;
+            
+            if (status === 'connected') {
+                indicator.textContent = '🟢';
+            } else if (status === 'connecting') {
+                indicator.textContent = '🟡';
+            } else if (status === 'error') {
+                indicator.textContent = '🔴';
+            } else {
+                indicator.textContent = '⚫';
+            }
+        }
+
+        // Expose functions to global scope for test.js
+        window.appState = appState;
+        window.generateECDSAKeyPair = generateECDSAKeyPair;
+        window.generateAESKey = generateAESKey;
+        window.deriveKeyFromPassword = deriveKeyFromPassword;
+        window.encryptData = encryptData;
+        window.decryptData = decryptData;
+        window.arrayBufferToBase64 = arrayBufferToBase64;
+        window.base64ToArrayBuffer = base64ToArrayBuffer;
+        window.checkForIdentityData = checkForIdentityData;
+        window.loadGateways = loadGateways;
+        window.showStatus = showStatus;
+        window.connectToPeer = connectToPeer;
+        window.verifyAppSignature = verifyAppSignature;
+        window.startStatelessApp = startStatelessApp;
+        window.generateIdentity = generateIdentity;
+        window.saveGateways = saveGateways;
+        window.startStatefulApp = startStatefulApp;
+
+        // Test framework is loaded from test.js
+    </script>
+    <script src="test.js"></script>
 </body>
 </html>
