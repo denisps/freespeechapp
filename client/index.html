@@ -621,6 +621,8 @@
             window.addEventListener('message', handleGatewayMessage);
             
             setTimeout(() => {
+                // TODO: In production, specify actual gateway origin instead of '*'
+                // This is acceptable for testing with mock gateway
                 appState.gatewayFrame.contentWindow.postMessage({ type: 'ready' }, '*');
             }, 1000);
         }
@@ -656,6 +658,14 @@
 
         async function connectToPeer(peerInfo) {
             try {
+                // TODO: Implement actual WebRTC peer connection in production
+                // Current implementation is a simplified mock for testing
+                // Production should:
+                // 1. Create RTCPeerConnection with proper configuration
+                // 2. Set remote description (SDP offer from peer)
+                // 3. Add ICE candidates
+                // 4. Create SDP answer and send back to gateway
+                // 5. Create RTCDataChannel for P2P communication
                 const peer = {
                     id: peerInfo.id,
                     connection: null,
@@ -689,6 +699,12 @@
         }
 
         async function verifyAppSignature(appContent) {
+            // TODO: Implement actual ECDSA signature verification in production
+            // Current implementation is a mock for testing purposes
+            // Production should:
+            // 1. Import appId as ECDSA public key
+            // 2. Verify signature of app content using the public key
+            // 3. Return false if verification fails
             return true;
         }
 
