@@ -4,10 +4,16 @@
 
 set -e
 
-# Check for update-only flag
-UPDATE_ONLY=false
-if [ "$1" = "--update-only" ]; then
-    UPDATE_ONLY=true
+# Source config file if it exists
+if [ -f "/tmp/freespeech-deploy.conf" ]; then
+    . /tmp/freespeech-deploy.conf
+fi
+
+# Auto-detect update mode based on service status
+if systemctl is-active --quiet freespeechapp 2>/dev/null; then
+    UPDATE_MODE=true
+else
+    UPDATE_MODE="${UPDATE_MODE:-false}"
 fi
 
 # Colors for output
@@ -77,10 +83,12 @@ install_nodejs() {
             ;;
     esac
     
-    # Download and execute platform-specific installer from GitHub
+    # Download and source platform-specific installer from GitHub
     echo -e "${YELLOW}Downloading platform installer for $DISTRO...${NC}"
     GITHUB_RAW="https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap"
-    curl -fsSL "$GITHUB_RAW/$PLATFORM_SCRIPT" | bash
+    TEMP_PLATFORM_SCRIPT="/tmp/$PLATFORM_SCRIPT"
+    curl -fsSL "$GITHUB_RAW/$PLATFORM_SCRIPT" -o "$TEMP_PLATFORM_SCRIPT"
+    . "$TEMP_PLATFORM_SCRIPT"
     
     echo -e "${GREEN}Node.js $(node --version) installed${NC}"
 }
@@ -166,24 +174,53 @@ EOF
 # Configure firewall
 configure_firewall() {
     echo -e "${YELLOW}Configuring firewall...${NC}"
+    platform_configure_firewall "$HTTP_PORT" "$HTTPS_PORT"
+    echo -e "${GREEN}Firewall rules added for ports $HTTP_PORT and $HTTPS_PORT${NC}"
+}
+
+# Update system packages
+update_system() {
+    echo -e "${YELLOW}Updating system packages...${NC}"
+    platform_update_system
+    echo -e "${GREEN}System packages updated${NC}"
+}
+
+# Update repository
+update_repository() {
+    echo -e "${YELLOW}Updating repository...${NC}"
     
-    case $DISTRO in
-        ubuntu|debian)
-            if command -v ufw &> /dev/null; then
-                ufw allow $HTTP_PORT/tcp
-                ufw allow $HTTPS_PORT/tcp
-                echo -e "${GREEN}UFW rules added for ports $HTTP_PORT and $HTTPS_PORT${NC}"
-            fi
-            ;;
-        centos|rhel|fedora)
-            if command -v firewall-cmd &> /dev/null; then
-                firewall-cmd --permanent --add-port=$HTTP_PORT/tcp
-                firewall-cmd --permanent --add-port=$HTTPS_PORT/tcp
-                firewall-cmd --reload
-                echo -e "${GREEN}Firewall rules added for ports $HTTP_PORT and $HTTPS_PORT${NC}"
-            fi
-            ;;
-    esac
+    if [ -d "$INSTALL_DIR" ]; then
+        cd "$INSTALL_DIR"
+        git fetch
+        git pull
+        echo -e "${GREEN}Repository updated${NC}"
+    else
+        echo -e "${YELLOW}Repository not found, cloning...${NC}"
+        clone_repository
+    fi
+}
+
+# Update dependencies
+update_dependencies() {
+    echo -e "${YELLOW}Updating dependencies...${NC}"
+    cd "$INSTALL_DIR/server"
+    npm install --production
+    echo -e "${GREEN}Dependencies updated${NC}"
+}
+
+# Restart service
+restart_service() {
+    echo -e "${YELLOW}Restarting service...${NC}"
+    platform_restart_service "$SERVICE_NAME"
+    sleep 2
+    
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        echo -e "${GREEN}Service restarted successfully${NC}"
+    else
+        echo -e "${RED}Failed to restart service${NC}"
+        systemctl status "$SERVICE_NAME"
+        exit 1
+    fi
 }
 
 # Start service
@@ -203,15 +240,52 @@ start_service() {
 
 # Main installation flow
 main() {
-    if [ "$UPDATE_ONLY" = true ]; then
-        # Only update service configuration
-        echo -e "${YELLOW}Updating service configuration only...${NC}"
-        detect_distro
+    detect_distro
+    
+    if [ "$UPDATE_MODE" = true ]; then
+        # Update mode: load platform functions first, then update
+        echo -e "${YELLOW}Running update...${NC}"
+        echo ""
+        
+        # Load platform-specific functions
+        PLATFORM_SCRIPT=""
+        case $DISTRO in
+            ubuntu|debian)
+                PLATFORM_SCRIPT="install-ubuntu.sh"
+                ;;
+            centos|rhel)
+                PLATFORM_SCRIPT="install-centos.sh"
+                ;;
+            fedora)
+                PLATFORM_SCRIPT="install-fedora.sh"
+                ;;
+        esac
+        
+        if [ -n "$PLATFORM_SCRIPT" ]; then
+            if [ -f "$INSTALL_DIR/bootstrap/$PLATFORM_SCRIPT" ]; then
+                . "$INSTALL_DIR/bootstrap/$PLATFORM_SCRIPT"
+            else
+                # Download from GitHub if not available locally
+                GITHUB_RAW="https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap"
+                TEMP_PLATFORM_SCRIPT="/tmp/$PLATFORM_SCRIPT"
+                curl -fsSL "$GITHUB_RAW/$PLATFORM_SCRIPT" -o "$TEMP_PLATFORM_SCRIPT"
+                . "$TEMP_PLATFORM_SCRIPT"
+            fi
+        fi
+        
+        update_system
+        update_repository
+        update_dependencies
         create_service
-        echo -e "${GREEN}Service configuration updated${NC}"
+        restart_service
+        
+        echo ""
+        echo -e "${GREEN}======================================${NC}"
+        echo -e "${GREEN}Update completed successfully!${NC}"
+        echo -e "${GREEN}======================================${NC}"
+        echo ""
     else
         # Full installation
-        detect_distro
         install_nodejs
         clone_repository
         install_dependencies

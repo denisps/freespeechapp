@@ -1,12 +1,19 @@
 #!/bin/bash
-# FreeSpeechApp Bootstrap for macOS
+# FreeSpeechApp macOS Bootstrap Script
 
 set -e
 
-# Check for update-only flag
-UPDATE_ONLY=false
-if [ "$1" = "--update-only" ]; then
-    UPDATE_ONLY=true
+# Source config file if it exists (for local deployment)
+if [ -f "./freespeech-admin.conf" ]; then
+    . ./freespeech-admin.conf
+fi
+
+# Auto-detect update mode based on LaunchAgent status
+AGENT_PLIST="$HOME/Library/LaunchAgents/com.freespeechapp.server.plist"
+if [ -f "$AGENT_PLIST" ] && launchctl list | grep -q "com.freespeechapp.server" 2>/dev/null; then
+    UPDATE_MODE=true
+else
+    UPDATE_MODE="${UPDATE_MODE:-false}"
 fi
 
 # Colors for output
@@ -89,6 +96,49 @@ install_dependencies() {
     cd "$INSTALL_DIR/server"
     npm install --production
     echo -e "${GREEN}Dependencies installed${NC}"
+}
+
+# Update repository
+update_repository() {
+    echo -e "${YELLOW}Updating repository...${NC}"
+    
+    if [ -d "$INSTALL_DIR" ]; then
+        cd "$INSTALL_DIR"
+        git fetch
+        git pull
+        echo -e "${GREEN}Repository updated${NC}"
+    else
+        echo -e "${YELLOW}Repository not found, cloning...${NC}"
+        clone_repository
+    fi
+}
+
+# Update dependencies
+update_dependencies() {
+    echo -e "${YELLOW}Updating dependencies...${NC}"
+    cd "$INSTALL_DIR/server"
+    npm install --production
+    echo -e "${GREEN}Dependencies updated${NC}"
+}
+
+# Restart service
+restart_service() {
+    echo -e "${YELLOW}Restarting service...${NC}"
+    
+    # Unload if already loaded
+    launchctl unload ~/Library/LaunchAgents/${SERVICE_NAME}.plist 2>/dev/null || true
+    
+    # Load the service
+    launchctl load ~/Library/LaunchAgents/${SERVICE_NAME}.plist
+    sleep 2
+    
+    if launchctl list | grep -q "$SERVICE_NAME"; then
+        echo -e "${GREEN}Service restarted successfully${NC}"
+    else
+        echo -e "${RED}Failed to restart service${NC}"
+        echo "Check logs: tail -f ~/Library/Logs/freespeechapp.error.log"
+        exit 1
+    fi
 }
 
 # Generate SSL certificates
@@ -181,11 +231,22 @@ start_service() {
 
 # Main installation flow
 main() {
-    if [ "$UPDATE_ONLY" = true ]; then
-        # Only update service configuration
-        echo -e "${YELLOW}Updating service configuration only...${NC}"
+    if [ "$UPDATE_MODE" = true ]; then
+        # Update mode: update existing installation
+        echo -e "${YELLOW}Running update...${NC}"
+        echo ""
+        
+        echo -e "${YELLOW}Note: Run 'brew upgrade' manually to update system packages${NC}"
+        update_repository
+        update_dependencies
         create_service
-        echo -e "${GREEN}Service configuration updated${NC}"
+        restart_service
+        
+        echo ""
+        echo -e "${GREEN}========================================${NC}"
+        echo -e "${GREEN}Update completed successfully!${NC}"
+        echo -e "${GREEN}========================================${NC}"
+        echo ""
     else
         # Full installation
         install_nodejs
