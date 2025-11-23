@@ -131,9 +131,18 @@ When user starts the app (either stateless or stateful mode):
    - Sends own SDP answer and ICE candidates back to gateway
    - Gateway relays connection info between peers
 
-7. **Gateway UI:**
+7. **App Content Download & Verification:**
+   - Wait for minimum peer connections (e.g., 3 peers)
+   - Download App Content from peers using App ID
+   - Verify App Content signature with App ID (ECDSA public key)
+   - Hide gateway iframe temporarily (allow more peers to connect)
+   - Continue accepting connections up to maximum (e.g., 20 peers)
+   - Remove gateway iframe automatically when complete
+
+8. **Gateway UI:**
    - Iframe wrapped with warning: "⚠️ Untrusted Gateway Content"
    - "Next Gateway" button to switch to next in list
+   - "Close Gateway" button in toolbar (user can manually remove iframe)
    - Gateway may display ads, captcha, or other content
 
 **Gateway Iframe Structure:**
@@ -142,16 +151,23 @@ When user starts the app (either stateless or stateful mode):
   <div class="gateway-warning">
     ⚠️ Untrusted Gateway Content
     <button id="next-gateway">Next Gateway →</button>
+    <button id="close-gateway">Close Gateway ✕</button>
   </div>
   <iframe 
     id="gateway-frame" 
     src="https://gateway1.example.com"
     sandbox="allow-scripts allow-same-origin"
     width="400"
-    height="200">
+    height="200"
+    style="display: block;">
   </iframe>
 </div>
 ```
+
+**Gateway Lifecycle:**
+1. **Visible**: Initial captcha/ad display
+2. **Hidden** (temporary): After minimum peers + app download + verification
+3. **Removed**: After maximum peers reached OR user clicks "Close Gateway"
 
 **Message Flow:**
 ```
@@ -162,6 +178,11 @@ When user starts the app (either stateless or stateful mode):
 5. Client → Gateway: Own SDP + ICE candidates for each peer
 6. Gateway relays connection info
 7. Client ↔ Peers: WebRTC DataChannel established
+8. Client downloads App Content from peers (minimum 3 peers)
+9. Client verifies App Content signature with App ID
+10. Gateway iframe hidden (more peers can still connect)
+11. Maximum peers reached OR user clicks "Close Gateway"
+12. Gateway iframe removed
 ```
 
 **Peer List Message Format:**
@@ -180,9 +201,11 @@ When user starts the app (either stateless or stateful mode):
 ```
 
 **Connection Limits:**
-- Maximum concurrent peer connections (e.g., 10-20)
+- Minimum peers for app download: 3
+- Maximum concurrent peer connections: 10-20
 - Priority: closest peers by latency
 - Drop slowest connections when limit reached
+- Gateway iframe lifecycle: visible → hidden (after min peers) → removed (after max peers or user request)
 
 ### 3. Provide More FreeSpeech Gateways
 - Add additional gateway server URLs
