@@ -15,16 +15,29 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         .container {
             max-width: 1000px;
-            margin: 0 auto;
+            margin: 20px auto;
             background: white;
             border-radius: 12px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            flex: 0 0 auto;
+        }
+        
+        .container.fullscreen {
+            max-width: none;
+            margin: 0;
+            border-radius: 0;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
@@ -131,6 +144,15 @@
 
         #app-area {
             padding: 20px;
+            display: none;
+        }
+        
+        #app-area.fullscreen {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            overflow: hidden;
         }
 
         .connection-status {
@@ -197,6 +219,19 @@
             border-radius: 8px;
             margin: 20px 0;
             min-height: 200px;
+        }
+        
+        #app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            flex: 1 1 auto;
+            display: none;
+            background: white;
+        }
+        
+        #app-iframe.active {
+            display: block;
         }
 
         .peer-status {
@@ -301,38 +336,7 @@
             </div>
         </header>
         
-        <!-- Mode 1: Run Stateless App -->
-        <div class="mode-section" id="mode-stateless">
-            <h2>Run Stateless App</h2>
-            <p class="mode-description">Use temporary identity for one-time secure communications</p>
-            <div class="mode-controls">
-                <input type="text" id="appId-stateless" placeholder="App ID (ECDSA public key)" class="app-id-input">
-                <button onclick="startStatelessApp()">Start Session</button>
-            </div>
-        </div>
-        
-        <!-- Mode 2: Generate Identity File -->
-        <div class="mode-section" id="mode-generate">
-            <h2>Generate Identity File</h2>
-            <p class="mode-description">Create a password-protected persistent identity</p>
-            <div class="mode-controls">
-                <input type="password" id="password-generate" placeholder="Enter password" class="password-input">
-                <button onclick="generateIdentity()">Generate Identity</button>
-            </div>
-        </div>
-        
-        <!-- Mode 3: Provide More FreeSpeech Gateways -->
-        <div class="mode-section" id="mode-gateways">
-            <h2>Provide More FreeSpeech Gateways</h2>
-            <p class="mode-description">Configure gateway servers for distributed trust</p>
-            <div class="mode-controls">
-                <textarea id="gateway-list" placeholder="Enter gateway URLs (one per line)&#10;https://gateway1.example.com&#10;https://gateway2.example.com" rows="5"></textarea>
-                <button onclick="saveGateways()">Save Gateways</button>
-            </div>
-            <div id="gateway-status" class="status-message"></div>
-        </div>
-        
-        <!-- Mode 4: Run Stateful App (only visible in identity files) -->
+        <!-- Mode 1: Run Stateful App (only visible in identity files) -->
         <div class="mode-section" id="mode-stateful" style="display: none;">
             <h2>Run Stateful App</h2>
             <p class="mode-description">Use your persistent identity</p>
@@ -343,6 +347,37 @@
             </div>
         </div>
         
+        <!-- Mode 2: Run Stateless App -->
+        <div class="mode-section" id="mode-stateless">
+            <h2>Run Stateless App</h2>
+            <p class="mode-description">Use temporary identity for one-time secure communications</p>
+            <div class="mode-controls">
+                <input type="text" id="appId-stateless" placeholder="App ID (ECDSA public key)" class="app-id-input">
+                <button onclick="startStatelessApp()">Start Session</button>
+            </div>
+        </div>
+        
+        <!-- Mode 3: Generate Identity File -->
+        <div class="mode-section" id="mode-generate">
+            <h2>Generate Identity File</h2>
+            <p class="mode-description">Create a password-protected persistent identity</p>
+            <div class="mode-controls">
+                <input type="password" id="password-generate" placeholder="Enter password" class="password-input">
+                <button onclick="generateIdentity()">Generate Identity</button>
+            </div>
+        </div>
+        
+        <!-- Mode 4: Provide More FreeSpeech Gateways -->
+        <div class="mode-section" id="mode-gateways">
+            <h2>Provide More FreeSpeech Gateways</h2>
+            <p class="mode-description">Configure gateway servers for distributed trust</p>
+            <div class="mode-controls">
+                <textarea id="gateway-list" placeholder="Enter gateway URLs (one per line)&#10;https://gateway1.example.com&#10;https://gateway2.example.com" rows="5"></textarea>
+                <button onclick="saveGateways()">Save Gateways</button>
+            </div>
+            <div id="gateway-status" class="status-message"></div>
+        </div>
+        
         <!-- App running area (hidden by default) -->
         <div id="app-area" style="display: none;">
             <div class="connection-status" id="status">
@@ -351,6 +386,7 @@
             </div>
             <div id="gateway-container"></div>
             <div id="app-content"></div>
+            <iframe id="app-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
             <div id="peer-info"></div>
         </div>
         
@@ -373,22 +409,124 @@
             userId: null,
             aesKey: null,
             appId: null,
-            gateways: ['mock-gateway.html', 'https://gateway1.example.com', 'https://gateway2.example.com'],
+            gateways: ['https://freespeechapp.org/', 'https://gateway1.example.com', 'https://gateway2.example.com'],
             currentGatewayIndex: 0,
             gatewayFrame: null,
             peers: [],
             minPeers: 3,
             maxPeers: 20,
             appContent: null,
-            isStateful: false
+            isStateful: false,
+            peerConnectionFactory: null, // Will be set to actual or mock implementation
+            appVerifier: null // Will be set to actual or mock implementation
         };
 
         const PBKDF2_ITERATIONS = 100000;
         const AES_KEY_LENGTH = 256;
 
+        // App Signature Verification - Actual implementation for production
+        const ActualAppVerifier = {
+            verify: async function(appContent) {
+                try {
+                    // Import App ID as ECDSA public key
+                    const appIdPublicKey = await crypto.subtle.importKey(
+                        'jwk',
+                        JSON.parse(appContent.appId),
+                        { name: 'ECDSA', namedCurve: 'P-256' },
+                        false,
+                        ['verify']
+                    );
+                    
+                    // Decode signature from base64
+                    const signatureBuffer = base64ToArrayBuffer(appContent.signature);
+                    
+                    // Hash the content
+                    const encoder = new TextEncoder();
+                    const contentBuffer = encoder.encode(appContent.content);
+                    
+                    // Verify signature
+                    const isValid = await crypto.subtle.verify(
+                        { name: 'ECDSA', hash: 'SHA-256' },
+                        appIdPublicKey,
+                        signatureBuffer,
+                        contentBuffer
+                    );
+                    
+                    return isValid;
+                } catch (err) {
+                    console.error('App signature verification error:', err);
+                    return false;
+                }
+            }
+        };
+
+        // WebRTC Peer Connection - Actual implementation for production
+        const ActualPeerConnection = {
+            create: async function(peerInfo, onDataChannel, onConnectionStateChange) {
+                const config = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                };
+                
+                const pc = new RTCPeerConnection(config);
+                
+                // Set up connection state change handler
+                pc.onconnectionstatechange = () => {
+                    if (onConnectionStateChange) {
+                        onConnectionStateChange(pc.connectionState);
+                    }
+                };
+                
+                // Set up data channel handler
+                pc.ondatachannel = (event) => {
+                    if (onDataChannel) {
+                        onDataChannel(event.channel);
+                    }
+                };
+                
+                // Set remote description from peer's SDP offer
+                if (peerInfo.sdp) {
+                    await pc.setRemoteDescription(new RTCSessionDescription(peerInfo.sdp));
+                }
+                
+                // Add ICE candidates
+                if (peerInfo.iceCandidates && Array.isArray(peerInfo.iceCandidates)) {
+                    for (const candidate of peerInfo.iceCandidates) {
+                        try {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        } catch (e) {
+                            console.warn('Failed to add ICE candidate:', e);
+                        }
+                    }
+                }
+                
+                // Create answer
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                
+                return {
+                    connection: pc,
+                    localDescription: pc.localDescription,
+                    close: () => pc.close()
+                };
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             checkForIdentityData();
             loadGateways();
+            // Initialize peer connection factory - defaults to actual implementation
+            // Can be overridden by test.js for testing
+            if (!appState.peerConnectionFactory) {
+                appState.peerConnectionFactory = ActualPeerConnection;
+            }
+            // Initialize app verifier - defaults to actual implementation
+            // Can be overridden by test.js for testing
+            if (!appState.appVerifier) {
+                appState.appVerifier = ActualAppVerifier;
+            }
         });
 
         function checkForIdentityData() {
@@ -399,8 +537,23 @@
                     if (identityData.salt && identityData.cryptoBox) {
                         document.getElementById('mode-stateful').style.display = 'block';
                         appState.isStateful = true;
-                        if (identityData.gateways) {
-                            appState.gateways = identityData.gateways;
+                        
+                        // Merge gateways from identity-data with those from localStorage
+                        if (identityData.gateways && Array.isArray(identityData.gateways)) {
+                            // Load gateways from localStorage
+                            const stored = localStorage.getItem('freespeech-gateways');
+                            let localGateways = [];
+                            if (stored) {
+                                try {
+                                    localGateways = JSON.parse(stored);
+                                } catch (e) {
+                                    console.error('Failed to parse localStorage gateways:', e);
+                                }
+                            }
+                            
+                            // Merge and deduplicate gateways
+                            const allGateways = [...identityData.gateways, ...localGateways];
+                            appState.gateways = Array.from(new Set(allGateways));
                         }
                     }
                 } catch (e) {
@@ -413,7 +566,10 @@
             const stored = localStorage.getItem('freespeech-gateways');
             if (stored) {
                 try {
-                    appState.gateways = JSON.parse(stored);
+                    const localGateways = JSON.parse(stored);
+                    // Merge with existing gateways and deduplicate
+                    const allGateways = [...appState.gateways, ...localGateways];
+                    appState.gateways = Array.from(new Set(allGateways));
                 } catch (e) {
                     console.error('Failed to load gateways:', e);
                 }
@@ -474,10 +630,11 @@
                 
                 const currentHtml = document.documentElement.outerHTML;
                 const identityJson = JSON.stringify(identityData, null, 2);
-                const newHtml = currentHtml.replace(
-                    /<script id="identity-data" type="application\/json"><\/script>/,
-                    `<script id="identity-data" type="application/json">\n${identityJson}\n    <\/script>`
-                );
+                
+                // Replace identity-data script tag, handling both empty and non-empty cases
+                const identityScriptRegex = /<script id="identity-data" type="application\/json">[\s\S]*?<\/script>/;
+                const newIdentityScript = `<script id="identity-data" type="application/json">\n${identityJson}\n    <\/script>`;
+                const newHtml = currentHtml.replace(identityScriptRegex, newIdentityScript);
                 
                 const blob = new Blob([newHtml], { type: 'text/html' });
                 const url = URL.createObjectURL(blob);
@@ -658,20 +815,41 @@
 
         async function connectToPeer(peerInfo) {
             try {
-                // TODO: Implement actual WebRTC peer connection in production
-                // Current implementation is a simplified mock for testing
-                // Production should:
-                // 1. Create RTCPeerConnection with proper configuration
-                // 2. Set remote description (SDP offer from peer)
-                // 3. Add ICE candidates
-                // 4. Create SDP answer and send back to gateway
-                // 5. Create RTCDataChannel for P2P communication
+                // Use the configured peer connection factory (actual or mock)
+                const factory = appState.peerConnectionFactory || ActualPeerConnection;
+                
+                const onDataChannel = (channel) => {
+                    console.log('Data channel opened:', channel);
+                    // Store channel for later use
+                    const peer = appState.peers.find(p => p.id === peerInfo.id);
+                    if (peer) {
+                        peer.dataChannel = channel;
+                    }
+                };
+                
+                const onConnectionStateChange = (state) => {
+                    console.log('Connection state changed:', state);
+                };
+                
+                const result = await factory.create(peerInfo, onDataChannel, onConnectionStateChange);
+                
                 const peer = {
                     id: peerInfo.id,
-                    connection: null,
-                    dataChannel: null
+                    connection: result.connection,
+                    dataChannel: result.dataChannel || null,
+                    localDescription: result.localDescription
                 };
+                
                 appState.peers.push(peer);
+                
+                // Send answer back to gateway
+                if (result.localDescription && appState.gatewayFrame) {
+                    appState.gatewayFrame.contentWindow.postMessage({
+                        type: 'answer',
+                        peerId: peerInfo.id,
+                        answer: result.localDescription
+                    }, '*');
+                }
             } catch (err) {
                 console.error('Peer connection error:', err);
             }
@@ -699,24 +877,65 @@
         }
 
         async function verifyAppSignature(appContent) {
-            // TODO: Implement actual ECDSA signature verification in production
-            // Current implementation is a mock for testing purposes
-            // Production should:
-            // 1. Import appId as ECDSA public key
-            // 2. Verify signature of app content using the public key
-            // 3. Return false if verification fails
-            return true;
+            // Use the configured app verifier (actual or mock)
+            const verifier = appState.appVerifier || ActualAppVerifier;
+            return await verifier.verify(appContent);
         }
 
         function displayAppContent(content) {
+            // Switch to fullscreen mode
+            const container = document.querySelector('.container');
+            const appArea = document.getElementById('app-area');
+            const appIframe = document.getElementById('app-iframe');
             const appContentEl = document.getElementById('app-content');
-            appContentEl.innerHTML = content;
+            const peerInfo = document.getElementById('peer-info');
             
-            document.getElementById('peer-info').innerHTML = `
-                <div class="peer-status">
-                    Connected to ${appState.peers.length} peer(s)
-                </div>
-            `;
+            // Hide mode sections
+            document.querySelectorAll('.mode-section').forEach(el => el.style.display = 'none');
+            
+            // Add fullscreen classes
+            container.classList.add('fullscreen');
+            appArea.classList.add('fullscreen');
+            appArea.style.display = 'flex';
+            
+            // Hide the app-content div and peer-info (not needed when using iframe)
+            appContentEl.style.display = 'none';
+            peerInfo.style.display = 'none';
+            
+            // Create HTML document for iframe with app content
+            const appHtml = '<!DOCTYPE html>\n' +
+                '<html>\n' +
+                '<head>\n' +
+                '    <meta charset="UTF-8">\n' +
+                '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+                '    <title>FreeSpeech App</title>\n' +
+                '    <style>\n' +
+                '        body {\n' +
+                '            margin: 0;\n' +
+                '            padding: 20px;\n' +
+                '            font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;\n' +
+                '        }\n' +
+                '    </style>\n' +
+                '</head>\n' +
+                '<body>\n' +
+                '    ' + content + '\n' +
+                '    <script>\n' +
+                '        // App can communicate with parent via postMessage\n' +
+                '        console.log(\'App loaded in iframe\');\n' +
+                '    <\/script>\n' +
+                '</body>\n' +
+                '</html>';
+            
+            // Load content in iframe
+            const blob = new Blob([appHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            appIframe.src = url;
+            appIframe.classList.add('active');
+            
+            // Clean up blob URL after iframe loads
+            appIframe.onload = () => {
+                URL.revokeObjectURL(url);
+            };
         }
 
         function switchToNextGateway() {
@@ -864,6 +1083,8 @@
         window.generateIdentity = generateIdentity;
         window.saveGateways = saveGateways;
         window.startStatefulApp = startStatefulApp;
+        window.ActualPeerConnection = ActualPeerConnection;
+        window.ActualAppVerifier = ActualAppVerifier;
 
         // Test framework is loaded from test.js
     </script>
