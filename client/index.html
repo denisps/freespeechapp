@@ -412,7 +412,7 @@
             userId: null,
             aesKey: null,
             appId: null,
-            gateways: ['https://freespeechapp.org/', 'https://gateway1.example.com', 'https://gateway2.example.com'],
+            gateways: [], // Will be loaded from localStorage or identity-data
             currentGatewayIndex: 0,
             gatewayFrame: null,
             peers: [],
@@ -541,22 +541,9 @@
                         document.getElementById('mode-stateful').style.display = 'block';
                         appState.isStateful = true;
                         
-                        // Merge gateways from identity-data with those from localStorage
-                        if (identityData.gateways && Array.isArray(identityData.gateways)) {
-                            // Load gateways from localStorage
-                            const stored = localStorage.getItem('freespeech-gateways');
-                            let localGateways = [];
-                            if (stored) {
-                                try {
-                                    localGateways = JSON.parse(stored);
-                                } catch (e) {
-                                    console.error('Failed to parse localStorage gateways:', e);
-                                }
-                            }
-                            
-                            // Merge and deduplicate gateways
-                            const allGateways = [...identityData.gateways, ...localGateways];
-                            appState.gateways = Array.from(new Set(allGateways));
+                        // Set gateways from identity-data if present
+                        if (identityData.gateways && Array.isArray(identityData.gateways) && identityData.gateways.length > 0) {
+                            appState.gateways = identityData.gateways;
                         }
                     }
                 } catch (e) {
@@ -567,15 +554,25 @@
 
         function loadGateways() {
             const stored = localStorage.getItem('freespeech-gateways');
+            let localGateways = [];
+            
             if (stored) {
                 try {
-                    const localGateways = JSON.parse(stored);
-                    // Merge with existing gateways and deduplicate
-                    const allGateways = [...appState.gateways, ...localGateways];
-                    appState.gateways = Array.from(new Set(allGateways));
+                    localGateways = JSON.parse(stored);
                 } catch (e) {
                     console.error('Failed to load gateways:', e);
                 }
+            }
+            
+            // Merge identity gateways (if any) with localStorage gateways and deduplicate
+            const allGateways = [...appState.gateways, ...localGateways];
+            const uniqueGateways = Array.from(new Set(allGateways));
+            
+            // If no gateways at all, use default
+            if (uniqueGateways.length === 0) {
+                appState.gateways = ['https://freespeechapp.org/'];
+            } else {
+                appState.gateways = uniqueGateways;
             }
         }
 
