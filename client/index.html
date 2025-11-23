@@ -574,6 +574,12 @@
             } else {
                 appState.gateways = uniqueGateways;
             }
+            
+            // Populate the gateway-list textarea with merged gateways
+            const gatewayListTextarea = document.getElementById('gateway-list');
+            if (gatewayListTextarea) {
+                gatewayListTextarea.value = appState.gateways.join('\n');
+            }
         }
 
         async function startStatelessApp() {
@@ -656,16 +662,18 @@
             const gatewayText = document.getElementById('gateway-list').value;
             const lines = gatewayText.split('\n').map(l => l.trim()).filter(l => l);
             
+            // Allow saving empty list to clear gateways from localStorage
             if (lines.length === 0) {
-                document.getElementById('gateway-status').textContent = 'Please enter at least one gateway URL';
-                return;
+                localStorage.removeItem('freespeech-gateways');
+                appState.gateways = ['https://freespeechapp.org/']; // Reset to default
+                document.getElementById('gateway-status').textContent = 'Cleared all gateways, using default';
+                document.getElementById('gateway-status').style.color = 'green';
+            } else {
+                appState.gateways = lines;
+                localStorage.setItem('freespeech-gateways', JSON.stringify(lines));
+                document.getElementById('gateway-status').textContent = `Saved ${lines.length} gateway(s)`;
+                document.getElementById('gateway-status').style.color = 'green';
             }
-            
-            appState.gateways = lines;
-            localStorage.setItem('freespeech-gateways', JSON.stringify(lines));
-            
-            document.getElementById('gateway-status').textContent = `Saved ${lines.length} gateway(s)`;
-            document.getElementById('gateway-status').style.color = 'green';
             
             setTimeout(() => {
                 document.getElementById('gateway-status').textContent = '';
