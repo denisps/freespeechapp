@@ -99,6 +99,7 @@ REPO_URL="https://github.com/denisps/freespeechapp.git"
 - [Bootstrap Scripts](bootstrap/README.md) - Deployment script details
 - [Architecture Overview](ARCHITECTURE_OVERVIEW.md) - System architecture
 - [Security Details](SECURITY.md) - Security features and best practices
+- [Testing Guide](TESTING.md) - Test suite documentation and usage
 
 ## Requirements
 
