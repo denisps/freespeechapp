@@ -15,16 +15,29 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         .container {
             max-width: 1000px;
-            margin: 0 auto;
+            margin: 20px auto;
             background: white;
             border-radius: 12px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            flex: 0 0 auto;
+        }
+        
+        .container.fullscreen {
+            max-width: none;
+            margin: 0;
+            border-radius: 0;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
@@ -131,6 +144,15 @@
 
         #app-area {
             padding: 20px;
+            display: none;
+        }
+        
+        #app-area.fullscreen {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            overflow: hidden;
         }
 
         .connection-status {
@@ -197,6 +219,19 @@
             border-radius: 8px;
             margin: 20px 0;
             min-height: 200px;
+        }
+        
+        #app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            flex: 1 1 auto;
+            display: none;
+            background: white;
+        }
+        
+        #app-iframe.active {
+            display: block;
         }
 
         .peer-status {
@@ -351,6 +386,7 @@
             </div>
             <div id="gateway-container"></div>
             <div id="app-content"></div>
+            <iframe id="app-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
             <div id="peer-info"></div>
         </div>
         
@@ -847,14 +883,59 @@
         }
 
         function displayAppContent(content) {
+            // Switch to fullscreen mode
+            const container = document.querySelector('.container');
+            const appArea = document.getElementById('app-area');
+            const appIframe = document.getElementById('app-iframe');
             const appContentEl = document.getElementById('app-content');
-            appContentEl.innerHTML = content;
+            const peerInfo = document.getElementById('peer-info');
             
-            document.getElementById('peer-info').innerHTML = `
-                <div class="peer-status">
-                    Connected to ${appState.peers.length} peer(s)
-                </div>
-            `;
+            // Hide mode sections
+            document.querySelectorAll('.mode-section').forEach(el => el.style.display = 'none');
+            
+            // Add fullscreen classes
+            container.classList.add('fullscreen');
+            appArea.classList.add('fullscreen');
+            appArea.style.display = 'flex';
+            
+            // Hide the app-content div and peer-info (not needed when using iframe)
+            appContentEl.style.display = 'none';
+            peerInfo.style.display = 'none';
+            
+            // Create HTML document for iframe with app content
+            const appHtml = '<!DOCTYPE html>\n' +
+                '<html>\n' +
+                '<head>\n' +
+                '    <meta charset="UTF-8">\n' +
+                '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+                '    <title>FreeSpeech App</title>\n' +
+                '    <style>\n' +
+                '        body {\n' +
+                '            margin: 0;\n' +
+                '            padding: 20px;\n' +
+                '            font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;\n' +
+                '        }\n' +
+                '    </style>\n' +
+                '</head>\n' +
+                '<body>\n' +
+                '    ' + content + '\n' +
+                '    <script>\n' +
+                '        // App can communicate with parent via postMessage\n' +
+                '        console.log(\'App loaded in iframe\');\n' +
+                '    <\/script>\n' +
+                '</body>\n' +
+                '</html>';
+            
+            // Load content in iframe
+            const blob = new Blob([appHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            appIframe.src = url;
+            appIframe.classList.add('active');
+            
+            // Clean up blob URL after iframe loads
+            appIframe.onload = () => {
+                URL.revokeObjectURL(url);
+            };
         }
 
         function switchToNextGateway() {
