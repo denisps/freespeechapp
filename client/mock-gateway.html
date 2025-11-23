@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock FreeSpeech Gateway</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .gateway-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            color: #f5576c;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        
+        .captcha-box {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .captcha-challenge {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background: #f5576c;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #e04658;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .config {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.85em;
+        }
+        
+        .config label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        
+        .config input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="gateway-container">
+        <h1>🌐 Mock Gateway</h1>
+        <p class="subtitle">Testing Gateway for FreeSpeechApp Development</p>
+        
+        <div class="captcha-box">
+            <div class="captcha-challenge" id="challenge">
+                Complete this simple math problem:<br>
+                <strong id="math-problem"></strong>
+            </div>
+            <input type="number" id="answer" placeholder="Enter answer" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <button id="verify-btn" onclick="verifyCaptcha()">Verify & Connect</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div class="config">
+            <label>Number of mock peers to generate:</label>
+            <input type="number" id="peer-count" value="5" min="3" max="20">
+            <button onclick="updatePeerCount()" style="padding: 8px 16px; font-size: 0.9em;">Update</button>
+        </div>
+    </div>
+    
+    <script>
+        // Mock Gateway Logic
+        let peerCount = 5;
+        let mathAnswer = 0;
+        
+        // Generate random math problem
+        function generateMathProblem() {
+            const a = Math.floor(Math.random() * 10) + 1;
+            const b = Math.floor(Math.random() * 10) + 1;
+            mathAnswer = a + b;
+            document.getElementById('math-problem').textContent = `${a} + ${b} = ?`;
+        }
+        
+        // Initialize
+        generateMathProblem();
+        
+        // Listen for messages from parent (client)
+        window.addEventListener('message', (event) => {
+            console.log('Mock gateway received message:', event.data);
+            
+            if (event.data.type === 'ready') {
+                showStatus('Client connected and ready', 'info');
+            }
+        });
+        
+        // Verify captcha
+        function verifyCaptcha() {
+            const userAnswer = parseInt(document.getElementById('answer').value);
+            
+            if (userAnswer === mathAnswer) {
+                showStatus('✓ Captcha verified! Sending peer list...', 'success');
+                document.getElementById('verify-btn').disabled = true;
+                
+                // Generate and send mock peer list
+                setTimeout(() => {
+                    sendMockPeers();
+                }, 500);
+            } else {
+                showStatus('✗ Wrong answer. Try again.', 'error');
+                generateMathProblem();
+                document.getElementById('answer').value = '';
+            }
+        }
+        
+        // Update peer count
+        function updatePeerCount() {
+            const input = document.getElementById('peer-count');
+            peerCount = parseInt(input.value) || 5;
+            peerCount = Math.max(3, Math.min(20, peerCount)); // Clamp between 3-20
+            input.value = peerCount;
+            showStatus(`Will generate ${peerCount} mock peers`, 'info');
+        }
+        
+        // Generate mock peer list
+        function generateMockPeers() {
+            const peers = [];
+            
+            for (let i = 0; i < peerCount; i++) {
+                // Generate mock SDP and ICE candidates
+                const mockSDP = {
+                    type: 'offer',
+                    sdp: `v=0\no=- ${Date.now()} 2 IN IP4 127.0.0.1\ns=-\nt=0 0\na=group:BUNDLE 0\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel`
+                };
+                
+                const mockICE = [
+                    {
+                        candidate: `candidate:${i}1 1 udp 2122260223 192.168.1.${100 + i} 54321 typ host`,
+                        sdpMLineIndex: 0,
+                        sdpMid: '0'
+                    },
+                    {
+                        candidate: `candidate:${i}2 1 udp 1686052607 203.0.113.${10 + i} 54321 typ srflx`,
+                        sdpMLineIndex: 0,
+                        sdpMid: '0'
+                    }
+                ];
+                
+                // Generate peer ID (hash of SDP + ICE)
+                const peerId = `peer-${i + 1}-${Date.now() % 10000}`;
+                
+                peers.push({
+                    id: peerId,
+                    sdp: mockSDP,
+                    iceCandidates: mockICE
+                });
+            }
+            
+            return peers;
+        }
+        
+        // Send mock peer list to parent
+        function sendMockPeers() {
+            const peers = generateMockPeers();
+            
+            const message = {
+                type: 'peers',
+                peers: peers
+            };
+            
+            // Send to parent window (client)
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(message, '*');
+                console.log('Sent mock peers to client:', peers.length);
+                showStatus(`✓ Sent ${peers.length} mock peers to client`, 'success');
+            } else {
+                console.log('Not embedded in iframe, cannot send peers');
+                showStatus('Not embedded in iframe', 'error');
+            }
+        }
+        
+        // Show status message
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+        }
+        
+        // Mock App Content with signature
+        const mockAppContent = {
+            appId: 'mock-ecdsa-public-key-p256',
+            content: `
+                <div style="padding: 20px; background: white; border-radius: 8px;">
+                    <h2>Mock FreeSpeech App</h2>
+                    <p>This is a mock application for testing purposes.</p>
+                    <p>App ID: mock-ecdsa-public-key-p256</p>
+                    <p>Version: 1.0</p>
+                    <div style="margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 6px;">
+                        <strong>✓ App loaded successfully from peers</strong>
+                    </div>
+                </div>
+            `,
+            signature: 'mock-ecdsa-signature-base64-encoded',
+            version: '1.0',
+            timestamp: Date.now()
+        };
+        
+        // Allow direct testing in standalone mode
+        if (window === window.parent) {
+            document.body.innerHTML += `
+                <div style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 6px; font-size: 0.85em;">
+                    <strong>Standalone Mode</strong><br>
+                    Open this in an iframe to test with client
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
