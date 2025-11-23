@@ -7,14 +7,15 @@ Secure, privacy-focused communication client built on cryptographic principles.
 The client is a single, self-contained HTML file that operates in three modes:
 
 ### 1. Run Stateless App
-- User provides an **App ID** (ECDSA private key) - identifies the application
+- User provides an **App ID** (ECDSA public key) - identifies and verifies the application
+- App ID used to fetch app from other peers and verify its integrity
 - Generates temporary **User ID** (ECDSA key pair) - identifies the user
 - User ID is ephemeral and not stored
 - No data stored locally - fully stateless operation
 - Perfect for one-time secure communications
 
 **Interface:**
-- Input field for App ID (ECDSA key)
+- Input field for App ID (ECDSA public key)
 - Start button to begin session
 
 ### 2. Generate Identity File
@@ -85,11 +86,13 @@ The client is a single, self-contained HTML file that operates in three modes:
 
 ### 4. Run Stateful App (Available only in Identity Files)
 - Appears only when opening a generated identity file
-- User enters password to decrypt embedded keys
+- User enters **App ID** to fetch and verify the application
+- User enters password to decrypt embedded User ID keys
 - Maintains persistent identity across sessions
 - Secure, password-protected stateful operation
 
 **Interface:**
+- Input field for App ID (ECDSA public key)
 - Password input field to unlock identity
 - Unlock button to decrypt and start session
 
@@ -97,11 +100,16 @@ The client is a single, self-contained HTML file that operates in three modes:
 
 When user starts the app (either stateless or stateful mode):
 
-1. **Key Preparation:**
-   - **Stateless mode:** User enters App ID (identifies app) → generates temporary User ID (identifies user)
+1. **App Verification:**
+   - User enters **App ID** (ECDSA public key)
+   - Fetch app code from peers using App ID
+   - Verify app integrity using App ID signature
+
+2. **Key Preparation:**
+   - **Stateless mode:** Generates temporary User ID (identifies user)
    - **Stateful mode:** User enters password → decrypts embedded User ID (persistent user identity)
 
-2. **Gateway Selection:**
+3. **Gateway Selection:****
    - Selects first gateway from configured list
    - Creates iframe with gateway URL as `src`
    - Iframe is small but visible to user
