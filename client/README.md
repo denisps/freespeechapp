@@ -7,8 +7,9 @@ Secure, privacy-focused communication client built on cryptographic principles.
 The client is a single, self-contained HTML file that operates in three modes:
 
 ### 1. Run Stateless App
-- User provides an **App ID** (ECDSA private key)
-- Generates ephemeral identity on-the-fly
+- User provides an **App ID** (ECDSA private key) - identifies the application
+- Generates temporary **User ID** (ECDSA key pair) - identifies the user
+- User ID is ephemeral and not stored
 - No data stored locally - fully stateless operation
 - Perfect for one-time secure communications
 
@@ -18,8 +19,8 @@ The client is a single, self-contained HTML file that operates in three modes:
 
 ### 2. Generate Identity File
 - User creates a password-protected identity
-- Generates ECDSA key pair for signing user data
-- ECDSA public key becomes the user's identity
+- Generates **User ID** ECDSA key pair for signing user data
+- User ID public key becomes the user's persistent identity
 - Generates AES-256 encryption key for data encryption
 - Encrypts both ECDSA private key and AES key with user password using PBKDF2 + salt
 - Exports encrypted identity as a downloadable HTML file (copy of the client itself)
@@ -32,9 +33,9 @@ The client is a single, self-contained HTML file that operates in three modes:
 - Downloads identity file as HTML blob
 
 **Technical Details:**
-- ECDSA key pair generation (P-256 curve)
-- ECDSA public key = user identity (derived from private key)
-- ECDSA private key = signing key (encrypted)
+- User ID: ECDSA key pair generation (P-256 curve)
+- User ID public key = persistent user identity (derived from private key)
+- User ID private key = signing key (encrypted)
 - AES-256 key generation for data encryption
 - PBKDF2 password derivation with random salt
 - Keys packaged into JSON structure
@@ -44,8 +45,8 @@ The client is a single, self-contained HTML file that operates in three modes:
 - Identity file is self-contained copy of the client with embedded credentials
 
 **Encryption Process:**
-1. Generate ECDSA private key + AES key
-2. Package keys into JSON: `{"ecdsaPrivateKey": "...", "aesKey": "..."}`
+1. Generate User ID (ECDSA key pair) + AES key
+2. Package keys into JSON: `{"userIdPrivateKey": "...", "aesKey": "..."}`
 3. Derive encryption key from password + salt using PBKDF2
 4. Encrypt JSON with derived key → crypto-box
 5. Base64 encode crypto-box
@@ -80,7 +81,7 @@ The client is a single, self-contained HTML file that operates in three modes:
 3. Derive decryption key from password + salt using PBKDF2
 4. Base64 decode crypto-box
 5. Decrypt crypto-box with derived key → JSON
-6. Parse JSON to extract ECDSA private key and AES key
+6. Parse JSON to extract User ID private key and AES key
 
 ### 4. Run Stateful App (Available only in Identity Files)
 - Appears only when opening a generated identity file
@@ -97,8 +98,8 @@ The client is a single, self-contained HTML file that operates in three modes:
 When user starts the app (either stateless or stateful mode):
 
 1. **Key Preparation:**
-   - **Stateless mode:** User enters App ID (ECDSA private key) → generates temporary key
-   - **Stateful mode:** User enters password → decrypts embedded ECDSA private key
+   - **Stateless mode:** User enters App ID (identifies app) → generates temporary User ID (identifies user)
+   - **Stateful mode:** User enters password → decrypts embedded User ID (persistent user identity)
 
 2. **Gateway Selection:**
    - Selects first gateway from configured list
