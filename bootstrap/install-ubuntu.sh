@@ -29,3 +29,24 @@ if ! command -v node &> /dev/null; then
 else
     echo "Node.js $(node --version) already installed"
 fi
+
+# Platform-specific functions for install.sh to call
+platform_update_system() {
+    apt-get update && apt-get upgrade -y
+}
+
+platform_configure_firewall() {
+    local HTTP_PORT="${1:-80}"
+    local HTTPS_PORT="${2:-443}"
+    
+    if command -v ufw &> /dev/null; then
+        ufw allow $HTTP_PORT/tcp
+        ufw allow $HTTPS_PORT/tcp
+        echo "UFW rules added for ports $HTTP_PORT and $HTTPS_PORT"
+    fi
+}
+
+platform_restart_service() {
+    local SERVICE_NAME="${1:-freespeechapp}"
+    systemctl restart "$SERVICE_NAME"
+}

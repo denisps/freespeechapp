@@ -67,18 +67,6 @@ if [ "$LOCAL_DEPLOY" = false ]; then
     fi
 fi
 
-# Set defaults
-SERVER_PORT="${SERVER_PORT:-22}"
-INSTALL_DIR="${INSTALL_DIR:-/opt/freespeechapp}"
-REPO_URL="${REPO_URL:-https://github.com/denisps/freespeechapp.git}"
-
-# Set remaining defaults
-SERVER_TYPE="${SERVER_TYPE:-nodejs}"
-STORAGE_LIMIT="${STORAGE_LIMIT:-10G}"
-RAM_LIMIT="${RAM_LIMIT:-1G}"
-HTTP_PORT="${HTTP_PORT:-80}"
-HTTPS_PORT="${HTTPS_PORT:-443}"
-
 # Build SSH command or local command
 if [ "$LOCAL_DEPLOY" = true ]; then
     # Local deployment - run commands directly
@@ -124,9 +112,7 @@ else
     echo "Mode: Remote"
 fi
 echo "Server: $SERVER_HOST"
-echo "Install Dir: $INSTALL_DIR"
-echo "HTTP Port: $HTTP_PORT"
-echo "HTTPS Port: $HTTPS_PORT"
+echo "Config: $CONFIG_FILE"
 echo ""
 
 # Check connectivity (skip for local)
@@ -144,75 +130,16 @@ fi
 # Copy config file
 copy_config
 
-# Check if already deployed
+# Run installation/update
+# The install script will source the config file and handle updates automatically
 if [ "$LOCAL_DEPLOY" = true ] && [ "$OS_TYPE" = "macos" ]; then
-    # macOS check
-    IS_DEPLOYED=$(remote "launchctl list | grep -q freespeechapp 2>/dev/null && echo yes || echo no")
+    remote "bash \$(pwd)/bootstrap/install-macos.sh || curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install-macos.sh | bash"
 else
-    # Linux check
-    IS_DEPLOYED=$(remote "systemctl is-active --quiet freespeechapp 2>/dev/null && echo yes || echo no")
+    remote "bash \$INSTALL_DIR/bootstrap/install.sh 2>/dev/null || curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash"
 fi
 
-if [ "$IS_DEPLOYED" = "yes" ]; then
-    echo "FreeSpeechApp is already deployed. Running update..."
-    echo ""
-    
-    # Update system packages (skip for macOS)
-    if [ "$LOCAL_DEPLOY" = true ] && [ "$OS_TYPE" = "macos" ]; then
-        echo "Skipping system update on macOS (run 'brew upgrade' manually if needed)"
-    else
-        echo "Updating system packages..."
-        remote "
-            if command -v apt-get >/dev/null 2>&1; then
-                apt-get update && apt-get upgrade -y
-            elif command -v dnf >/dev/null 2>&1; then
-                dnf upgrade -y
-            elif command -v yum >/dev/null 2>&1; then
-                yum update -y
-            fi
-        "
-    fi
-    
-    # Update repository
-    echo "Updating repository..."
-    remote "cd $INSTALL_DIR && git fetch && git pull"
-    
-    # Update dependencies
-    echo "Updating dependencies..."
-    remote "cd $INSTALL_DIR/server && npm install --production"
-    
-    # Update service with new config
-    if [ "$LOCAL_DEPLOY" = true ] && [ "$OS_TYPE" = "macos" ]; then
-        echo "Updating service configuration..."
-        remote "export REPO_URL='$REPO_URL' INSTALL_DIR='$INSTALL_DIR' HTTP_PORT='$HTTP_PORT' HTTPS_PORT='$HTTPS_PORT' STORAGE_LIMIT='$STORAGE_LIMIT' RAM_LIMIT='$RAM_LIMIT' && bash $(pwd)/bootstrap/install-macos.sh --update-only"
-    else
-        echo "Updating service configuration..."
-        remote "export REPO_URL='$REPO_URL' INSTALL_DIR='$INSTALL_DIR' HTTP_PORT='$HTTP_PORT' HTTPS_PORT='$HTTPS_PORT' STORAGE_LIMIT='$STORAGE_LIMIT' RAM_LIMIT='$RAM_LIMIT' && curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash -s -- --update-only"
-    fi
-    
-    # Restart service
-    echo "Restarting service..."
-    if [ "$LOCAL_DEPLOY" = true ] && [ "$OS_TYPE" = "macos" ]; then
-        remote "launchctl unload ~/Library/LaunchAgents/org.freespeechapp.plist 2>/dev/null || true"
-        remote "launchctl load ~/Library/LaunchAgents/org.freespeechapp.plist"
-    else
-        remote "systemctl restart freespeechapp"
-    fi
-    
-    echo ""
-    echo "Update complete!"
-else
-    # Run fresh installation
-    echo "Starting fresh deployment..."
-    if [ "$LOCAL_DEPLOY" = true ] && [ "$OS_TYPE" = "macos" ]; then
-        remote "export REPO_URL='$REPO_URL' INSTALL_DIR='$INSTALL_DIR' HTTP_PORT='$HTTP_PORT' HTTPS_PORT='$HTTPS_PORT' STORAGE_LIMIT='$STORAGE_LIMIT' RAM_LIMIT='$RAM_LIMIT' && bash $(pwd)/bootstrap/install-macos.sh"
-    else
-        remote "export REPO_URL='$REPO_URL' INSTALL_DIR='$INSTALL_DIR' HTTP_PORT='$HTTP_PORT' HTTPS_PORT='$HTTPS_PORT' STORAGE_LIMIT='$STORAGE_LIMIT' RAM_LIMIT='$RAM_LIMIT' && curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash"
-    fi
-    
-    echo ""
-    echo "Deployment complete!"
-fi
+echo ""
+echo "Deployment complete!"
 echo ""
 echo "To manage the server, SSH in and use:"
 echo "  systemctl status freespeechapp"
