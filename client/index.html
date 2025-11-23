@@ -62,6 +62,8 @@
             position: absolute;
             top: 10px;
             right: 10px;
+            display: flex;
+            gap: 10px;
         }
 
         .toolbar-btn {
@@ -332,6 +334,7 @@
             <h1>🔒 FreeSpeechApp</h1>
             <p class="tagline">Secure, privacy-focused communication</p>
             <div class="toolbar">
+                <button id="close-gateway-toolbar" class="toolbar-btn" style="display: none;">Close Gateway ✕</button>
                 <button id="run-tests" class="toolbar-btn">Run Tests</button>
             </div>
         </header>
@@ -757,7 +760,6 @@
                 <div class="gateway-warning">
                     ⚠️ Untrusted Gateway Content
                     <button id="next-gateway" class="gateway-btn">Next Gateway →</button>
-                    <button id="close-gateway" class="gateway-btn">Close Gateway ✕</button>
                 </div>
                 <iframe 
                     id="gateway-frame" 
@@ -773,7 +775,11 @@
             appState.gatewayFrame = document.getElementById('gateway-frame');
             
             document.getElementById('next-gateway').addEventListener('click', switchToNextGateway);
-            document.getElementById('close-gateway').addEventListener('click', closeGateway);
+            
+            // Show close gateway button in toolbar
+            const closeGatewayToolbar = document.getElementById('close-gateway-toolbar');
+            closeGatewayToolbar.style.display = 'block';
+            closeGatewayToolbar.onclick = closeGateway;
             
             window.addEventListener('message', handleGatewayMessage);
             
@@ -803,10 +809,6 @@
                 if (appState.peers.length >= appState.minPeers) {
                     showStatus('connected', `Connected to ${appState.peers.length} peers`);
                     await downloadAndVerifyApp();
-                    
-                    if (appState.gatewayFrame) {
-                        appState.gatewayFrame.style.display = 'none';
-                    }
                 }
             } catch (err) {
                 showStatus('error', `Connection failed: ${err.message}`);
@@ -869,7 +871,15 @@
             
             if (isValid) {
                 appState.appContent = mockAppContent;
-                showStatus('connected', 'App verified and loaded');
+                const peerCount = appState.peers.length;
+                showStatus('connected', `App verified and loaded (${peerCount} peer${peerCount !== 1 ? 's' : ''} connected)`);
+                
+                // Hide gateway container when app is loaded
+                const gatewayContainer = document.getElementById('gateway-container');
+                if (gatewayContainer) {
+                    gatewayContainer.style.display = 'none';
+                }
+                
                 displayAppContent(mockAppContent.content);
             } else {
                 showStatus('error', 'App signature verification failed');
@@ -925,6 +935,10 @@
             const container = document.getElementById('gateway-container');
             container.innerHTML = '';
             appState.gatewayFrame = null;
+            
+            // Hide close gateway button in toolbar
+            const closeGatewayToolbar = document.getElementById('close-gateway-toolbar');
+            closeGatewayToolbar.style.display = 'none';
         }
 
         async function generateECDSAKeyPair() {

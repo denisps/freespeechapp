@@ -236,7 +236,8 @@ When user starts the app (either stateless or stateful mode):
 8. **Gateway UI:**
    - Iframe wrapped with warning: "⚠️ Untrusted Gateway Content"
    - "Next Gateway" button to switch to next in list
-   - "Close Gateway" button in toolbar (user can manually remove iframe)
+   - "Close Gateway" button in header toolbar (user can manually remove iframe)
+   - Gateway section hidden when app loads
    - Gateway may display ads, captcha, or other content
 
 **Gateway Iframe Structure:**
@@ -245,7 +246,6 @@ When user starts the app (either stateless or stateful mode):
   <div class="gateway-warning">
     ⚠️ Untrusted Gateway Content
     <button id="next-gateway">Next Gateway →</button>
-    <button id="close-gateway">Close Gateway ✕</button>
   </div>
   <iframe 
     id="gateway-frame" 
@@ -260,8 +260,8 @@ When user starts the app (either stateless or stateful mode):
 
 **Gateway Lifecycle:**
 1. **Visible**: Initial captcha/ad display
-2. **Hidden** (temporary): After minimum peers + app download + verification
-3. **Removed**: After maximum peers reached OR user clicks "Close Gateway"
+2. **Hidden**: After app download and verification (status shows peer count)
+3. **Removed**: User clicks "Close Gateway" button in toolbar
 
 **Message Flow:**
 ```
@@ -274,9 +274,8 @@ When user starts the app (either stateless or stateful mode):
 7. Client ↔ Peers: WebRTC DataChannel established
 8. Client downloads App Content from peers (minimum 3 peers)
 9. Client verifies App Content signature with App ID
-10. Gateway iframe hidden (more peers can still connect)
-11. Maximum peers reached OR user clicks "Close Gateway"
-12. Gateway iframe removed
+10. Gateway section hidden automatically, status shows peer count
+11. User can click "Close Gateway" button in toolbar to remove gateway section
 ```
 
 **Peer List Message Format:**
