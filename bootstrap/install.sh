@@ -174,25 +174,15 @@ EOF
 # Configure firewall
 configure_firewall() {
     echo -e "${YELLOW}Configuring firewall...${NC}"
-    
-    if type platform_configure_firewall &> /dev/null; then
-        platform_configure_firewall "$HTTP_PORT" "$HTTPS_PORT"
-        echo -e "${GREEN}Firewall rules added for ports $HTTP_PORT and $HTTPS_PORT${NC}"
-    else
-        echo -e "${YELLOW}Platform firewall configuration not available${NC}"
-    fi
+    platform_configure_firewall "$HTTP_PORT" "$HTTPS_PORT"
+    echo -e "${GREEN}Firewall rules added for ports $HTTP_PORT and $HTTPS_PORT${NC}"
 }
 
 # Update system packages
 update_system() {
     echo -e "${YELLOW}Updating system packages...${NC}"
-    
-    if type platform_update_system &> /dev/null; then
-        platform_update_system
-        echo -e "${GREEN}System packages updated${NC}"
-    else
-        echo -e "${YELLOW}Platform update not available, skipping...${NC}"
-    fi
+    platform_update_system
+    echo -e "${GREEN}System packages updated${NC}"
 }
 
 # Update repository
@@ -221,13 +211,7 @@ update_dependencies() {
 # Restart service
 restart_service() {
     echo -e "${YELLOW}Restarting service...${NC}"
-    
-    if type platform_restart_service &> /dev/null; then
-        platform_restart_service "$SERVICE_NAME"
-    else
-        systemctl restart "$SERVICE_NAME"
-    fi
-    
+    platform_restart_service "$SERVICE_NAME"
     sleep 2
     
     if systemctl is-active --quiet "$SERVICE_NAME"; then
