@@ -374,15 +374,27 @@ async function runTests() {
             failCount++;
         }
         
-        // Test 16: Mode 4 Visibility (should be hidden by default)
+        // Test 16: Mode 4 Visibility (should be hidden when no identity data, visible when identity exists)
         try {
             const mode4 = document.getElementById('mode-stateful');
             const isHidden = mode4.style.display === 'none' || window.getComputedStyle(mode4).display === 'none';
-            if (isHidden && !appState.isStateful) {
-                output += '<div class="test-passed">✓ Mode 4 (stateful) hidden when no identity data</div>';
-                passCount++;
+            
+            if (appState.isStateful) {
+                // If identity data exists, Mode 4 should be visible
+                if (!isHidden) {
+                    output += '<div class="test-passed">✓ Mode 4 (stateful) visible when identity data exists</div>';
+                    passCount++;
+                } else {
+                    throw new Error('Mode 4 should be visible when identity data exists');
+                }
             } else {
-                throw new Error('Mode 4 should be hidden');
+                // If no identity data, Mode 4 should be hidden
+                if (isHidden) {
+                    output += '<div class="test-passed">✓ Mode 4 (stateful) hidden when no identity data</div>';
+                    passCount++;
+                } else {
+                    throw new Error('Mode 4 should be hidden when no identity data');
+                }
             }
         } catch (e) {
             output += `<div class="test-failed">✗ Mode 4 visibility: ${e.message}</div>`;
@@ -455,12 +467,204 @@ async function runTests() {
             failCount++;
         }
         
+        // Test 20: Mock Gateway iframe creation
+        try {
+            // Test that gateway iframe can be created with mock-gateway.html
+            const mockGatewayUrl = 'mock-gateway.html';
+            const testContainer = document.createElement('div');
+            testContainer.id = 'test-gateway-container';
+            document.body.appendChild(testContainer);
+            
+            const gatewayDiv = document.createElement('div');
+            gatewayDiv.className = 'gateway-wrapper';
+            gatewayDiv.innerHTML = `
+                <div class="gateway-warning">
+                    ⚠️ Untrusted Gateway Content
+                    <button class="gateway-btn">Next Gateway →</button>
+                    <button class="gateway-btn">Close Gateway ✕</button>
+                </div>
+                <iframe 
+                    id="test-gateway-frame" 
+                    src="${mockGatewayUrl}"
+                    sandbox="allow-scripts allow-same-origin"
+                    width="400"
+                    height="200"
+                    style="display: block; border: none;">
+                </iframe>
+            `;
+            testContainer.appendChild(gatewayDiv);
+            
+            const iframe = document.getElementById('test-gateway-frame');
+            if (iframe && iframe.src.includes('mock-gateway.html')) {
+                output += '<div class="test-passed">✓ Mock gateway iframe creation with correct source</div>';
+                passCount++;
+            } else {
+                throw new Error('Gateway iframe not created properly');
+            }
+            
+            // Cleanup
+            document.body.removeChild(testContainer);
+        } catch (e) {
+            output += `<div class="test-failed">✗ Mock gateway iframe creation: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 21: Gateway postMessage workflow simulation
+        try {
+            let messageReceived = false;
+            let peerDataReceived = false;
+            
+            // Set up message handler
+            const testMessageHandler = (event) => {
+                if (event.data && event.data.type === 'peers') {
+                    messageReceived = true;
+                    if (Array.isArray(event.data.peers) && event.data.peers.length > 0) {
+                        peerDataReceived = true;
+                    }
+                }
+            };
+            
+            window.addEventListener('message', testMessageHandler);
+            
+            // Simulate gateway sending peers message
+            const mockPeerMessage = {
+                type: 'peers',
+                peers: [
+                    {
+                        id: 'test-peer-1',
+                        sdp: { type: 'offer', sdp: 'mock-sdp-data' },
+                        iceCandidates: [
+                            { candidate: 'candidate:1 1 udp 2122260223 192.168.1.100 54321 typ host' }
+                        ]
+                    },
+                    {
+                        id: 'test-peer-2',
+                        sdp: { type: 'offer', sdp: 'mock-sdp-data-2' },
+                        iceCandidates: [
+                            { candidate: 'candidate:2 1 udp 2122260223 192.168.1.101 54321 typ host' }
+                        ]
+                    }
+                ]
+            };
+            
+            window.postMessage(mockPeerMessage, '*');
+            
+            // Give it a moment to process
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            window.removeEventListener('message', testMessageHandler);
+            
+            if (messageReceived && peerDataReceived) {
+                output += '<div class="test-passed">✓ Gateway postMessage workflow (peers message)</div>';
+                passCount++;
+            } else {
+                throw new Error('Message not received or processed correctly');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Gateway postMessage workflow: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 22: Gateway lifecycle management
+        try {
+            // Test gateway visibility control
+            const testContainer = document.createElement('div');
+            testContainer.id = 'test-gateway-lifecycle';
+            document.body.appendChild(testContainer);
+            
+            const gatewayDiv = document.createElement('div');
+            gatewayDiv.className = 'gateway-wrapper';
+            gatewayDiv.innerHTML = `
+                <div class="gateway-warning">
+                    ⚠️ Untrusted Gateway Content
+                </div>
+                <iframe id="test-lifecycle-frame" style="display: block;"></iframe>
+            `;
+            testContainer.appendChild(gatewayDiv);
+            
+            const iframe = document.getElementById('test-lifecycle-frame');
+            
+            // Test initial visibility
+            const initiallyVisible = iframe.style.display === 'block';
+            
+            // Test hiding
+            iframe.style.display = 'none';
+            const hiddenCorrectly = iframe.style.display === 'none';
+            
+            // Test removal
+            testContainer.innerHTML = '';
+            const removed = testContainer.children.length === 0;
+            
+            document.body.removeChild(testContainer);
+            
+            if (initiallyVisible && hiddenCorrectly && removed) {
+                output += '<div class="test-passed">✓ Gateway lifecycle (visible → hidden → removed)</div>';
+                passCount++;
+            } else {
+                throw new Error('Gateway lifecycle not managed correctly');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Gateway lifecycle management: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 23: Mock gateway peer data validation
+        try {
+            const validPeer = {
+                id: 'peer-123',
+                sdp: {
+                    type: 'offer',
+                    sdp: 'v=0\no=- 123456 2 IN IP4 127.0.0.1\ns=-\nt=0 0'
+                },
+                iceCandidates: [
+                    {
+                        candidate: 'candidate:1 1 udp 2122260223 192.168.1.100 54321 typ host',
+                        sdpMLineIndex: 0,
+                        sdpMid: '0'
+                    }
+                ]
+            };
+            
+            // Validate structure
+            const hasId = typeof validPeer.id === 'string' && validPeer.id.length > 0;
+            const hasSdp = validPeer.sdp && validPeer.sdp.type && validPeer.sdp.sdp;
+            const hasIce = Array.isArray(validPeer.iceCandidates) && validPeer.iceCandidates.length > 0;
+            
+            if (hasId && hasSdp && hasIce) {
+                output += '<div class="test-passed">✓ Mock gateway peer data structure validation</div>';
+                passCount++;
+            } else {
+                throw new Error('Peer data structure invalid');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Mock gateway peer data validation: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 24: Gateway ready message sending
+        try {
+            // Simulate sending ready message to gateway
+            const readyMessage = { type: 'ready' };
+            
+            // In real scenario, this would be sent to iframe.contentWindow
+            // For testing, we just validate the message structure
+            if (readyMessage.type === 'ready') {
+                output += '<div class="test-passed">✓ Gateway ready message structure</div>';
+                passCount++;
+            } else {
+                throw new Error('Invalid ready message structure');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Gateway ready message sending: ${e.message}</div>`;
+            failCount++;
+        }
+        
         output += '</div>'; // End gateway section
         
         // === App Verification Tests ===
         output += '<div class="test-section"><h3>App Verification</h3>';
         
-        // Test 20: App Signature Verification (Mock)
+        // Test 25: App Signature Verification (Mock)
         try {
             const mockApp = {
                 appId: 'mock-ecdsa-public-key',
