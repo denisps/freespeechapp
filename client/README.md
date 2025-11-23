@@ -18,8 +18,10 @@ The client is a single, self-contained HTML file that operates in three modes:
 
 ### 2. Generate Identity File
 - User creates a password-protected identity
-- Generates AES-256 encryption key
-- Encrypts key with user password using PBKDF2 + salt
+- Generates ECDSA key pair for signing user data
+- ECDSA public key becomes the user's identity
+- Generates AES-256 encryption key for data encryption
+- Encrypts both ECDSA private key and AES key with user password using PBKDF2 + salt
 - Exports encrypted identity as a downloadable HTML file (copy of the client itself)
 - Encrypted keys embedded in a `<script>` tag within the HTML
 - Opening the identity file reveals a 4th section: **Run Stateful App**
@@ -30,10 +32,13 @@ The client is a single, self-contained HTML file that operates in three modes:
 - Downloads identity file as HTML blob
 
 **Technical Details:**
-- AES-256 key generation
+- ECDSA key pair generation (P-256 curve)
+- ECDSA public key = user identity
+- ECDSA private key = signing key (encrypted)
+- AES-256 key generation for data encryption
 - PBKDF2 password derivation
 - Random salt generation
-- Encrypted key + salt stored in `<script>` tag within HTML
+- All keys encrypted and stored in `<script>` tag within HTML
 - Identity file is self-contained copy of the client with embedded credentials
 
 **Identity File Structure:**
@@ -45,7 +50,9 @@ The client is a single, self-contained HTML file that operates in three modes:
     <!-- Client UI -->
     <script id="identity-data" type="application/json">
     {
-      "encryptedKey": "...",
+      "encryptedEcdsaPrivateKey": "...",
+      "ecdsaPublicKey": "...",
+      "encryptedAesKey": "...",
       "salt": "...",
       "version": "1.0"
     }
