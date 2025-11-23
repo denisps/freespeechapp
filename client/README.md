@@ -1,17 +1,60 @@
 # FreeSpeechApp Client
 
-Web-based client for secure communication using HTTP polling.
+Secure, privacy-focused communication client built on cryptographic principles.
+
+## Principle of Operation
+
+The client is a single, self-contained HTML file that operates in three modes:
+
+### 1. Run Stateless App
+- User provides an **App ID** (ECDSA private key)
+- Generates ephemeral identity on-the-fly
+- No data stored locally - fully stateless operation
+- Perfect for one-time secure communications
+
+**Interface:**
+- Input field for App ID (ECDSA key)
+- Start button to begin session
+
+### 2. Generate Identity File
+- User creates a password-protected identity
+- Generates AES-256 encryption key
+- Encrypts key with user password using PBKDF2 + salt
+- Exports encrypted identity as downloadable HTML file
+- Identity file can be opened to restore session
+
+**Interface:**
+- Password input field
+- Generate button
+- Downloads encrypted identity as HTML blob
+
+**Technical Details:**
+- AES-256 key generation
+- PBKDF2 password derivation
+- Random salt generation
+- Encrypted key + salt stored in HTML file
+
+### 3. Provide More FreeSpeech Gateways
+- Add additional gateway server URLs
+- Distributed trust model - no single point of failure
+- Routes through multiple gateways for enhanced privacy
+- Load balancing and redundancy
+
+**Interface:**
+- Text area for adding gateway URLs
+- Save/update gateway configuration
 
 ## Features
 
-- Clean, modern user interface
+- Single HTML file - fully self-contained
+- Zero external dependencies
+- Client-side encryption
 - HTTP polling for real-time communication (no WebSockets)
 - Cloudflare compatible
 - Broadcast and direct messaging
 - Connection status indicator
 - Message history display
 - Responsive design
-- Zero external dependencies
 
 ## Usage
 

@@ -81,37 +81,12 @@ REPO_URL="https://github.com/denisps/freespeechapp.git"
 
 ## Architecture
 
-FreeSpeechApp is a secure, privacy-focused communication platform built on cryptographic principles.
-
-### Client Principle of Operation
-
-The client is a single HTML file that operates in three modes:
-
-#### 1. Run Stateless App
-- User provides an **App ID** (ECDSA private key)
-- Generates ephemeral identity on-the-fly
-- No data stored locally - fully stateless operation
-- Perfect for one-time secure communications
-
-#### 2. Generate Identity File
-- User creates a password-protected identity
-- Generates AES-256 encryption key
-- Encrypts key with user password using PBKDF2 + salt
-- Exports encrypted identity as downloadable HTML file
-- Identity file can be opened to restore session
-
-#### 3. Provide More FreeSpeech Gateways
-- Add additional gateway server URLs
-- Distributed trust model - no single point of failure
-- Routes through multiple gateways for enhanced privacy
-- Load balancing and redundancy
-
-### Server Architecture
-
 - **Server** (`/server`) - Node.js HTTPS server with HTTP polling, zero dependencies
 - **Client** (`/client`) - Single HTML file, vanilla JavaScript, fully self-contained
 - **Bootstrap** (`/bootstrap`) - Automated deployment scripts for all platforms
 - **Admin Script** (`admin-deploy.sh`) - Remote deployment and update tool
+
+See [Client Documentation](client/README.md) for detailed client architecture and operation principles.
 
 ## Documentation
 
