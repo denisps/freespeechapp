@@ -30,7 +30,7 @@ HTTPS_PORT="${HTTPS_PORT:-8443}"
 STORAGE_LIMIT="${STORAGE_LIMIT:-10G}"
 RAM_LIMIT="${RAM_LIMIT:-1G}"
 SERVICE_NAME="org.freespeechapp"
-NODE_VERSION="18"
+NODE_VERSION="23"
 
 echo -e "${GREEN}FreeSpeechApp Bootstrap for macOS${NC}"
 echo "=========================================="
