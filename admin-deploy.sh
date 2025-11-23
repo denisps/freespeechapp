@@ -135,7 +135,7 @@ copy_config
 if [ "$LOCAL_DEPLOY" = true ] && [ "$OS_TYPE" = "macos" ]; then
     remote "$(pwd)/bootstrap/install-macos.sh 2>/dev/null || curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install-macos.sh | bash"
 else
-    remote "[ -x $INSTALL_DIR/bootstrap/install.sh ] && $INSTALL_DIR/bootstrap/install.sh || curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash"
+    remote "curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash"
 fi
 
 echo ""
