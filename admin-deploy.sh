@@ -145,7 +145,15 @@ fi
 copy_config
 
 # Check if already deployed
-if remote "systemctl is-active --quiet freespeechapp 2>/dev/null" || remote "launchctl list | grep -q freespeechapp 2>/dev/null"; then
+if [ "$LOCAL_DEPLOY" = true ] && [ "$OS_TYPE" = "macos" ]; then
+    # macOS check
+    IS_DEPLOYED=$(remote "launchctl list | grep -q freespeechapp 2>/dev/null && echo yes || echo no")
+else
+    # Linux check
+    IS_DEPLOYED=$(remote "systemctl is-active --quiet freespeechapp 2>/dev/null && echo yes || echo no")
+fi
+
+if [ "$IS_DEPLOYED" = "yes" ]; then
     echo "FreeSpeechApp is already deployed. Running update..."
     echo ""
     
