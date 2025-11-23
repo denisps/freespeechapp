@@ -242,6 +242,8 @@
             
             // Send to parent window (client)
             if (window.parent && window.parent !== window) {
+                // TODO: In production, specify actual client origin instead of '*'
+                // For testing purposes, wildcard is acceptable
                 window.parent.postMessage(message, '*');
                 console.log('Sent mock peers to client:', peers.length);
                 showStatus(`✓ Sent ${peers.length} mock peers to client`, 'success');
