@@ -109,17 +109,29 @@ When user starts the app (either stateless or stateful mode):
    - **Stateless mode:** Generates temporary User ID (identifies user)
    - **Stateful mode:** User enters password → decrypts embedded User ID (persistent user identity)
 
-3. **Gateway Selection:****
+3. **Gateway Selection:**
    - Selects first gateway from configured list
    - Creates iframe with gateway URL as `src`
    - Iframe is small but visible to user
 
-3. **Gateway Communication:**
+4. **Gateway Communication:**
    - Listens for `postMessage` events from gateway iframe
    - Gateway presents content to user (ads, captcha, etc.)
    - Two-way communication via `window.postMessage` API
 
-4. **Gateway UI:**
+5. **Peer Discovery:**
+   - Gateway verifies user action (captcha solved, ad viewed, etc.)
+   - Gateway sends peer list via `postMessage` to client
+   - Each peer includes: SDP offer and ICE candidates
+   - Peer ID = hash(SDP + ICE candidates)
+
+6. **WebRTC Connection Establishment:**
+   - Client attempts to connect to peers (up to connection limit)
+   - Creates WebRTC DataChannel for each peer
+   - Sends own SDP answer and ICE candidates back to gateway
+   - Gateway relays connection info between peers
+
+7. **Gateway UI:**
    - Iframe wrapped with warning: "⚠️ Untrusted Gateway Content"
    - "Next Gateway" button to switch to next in list
    - Gateway may display ads, captcha, or other content
@@ -143,8 +155,34 @@ When user starts the app (either stateless or stateful mode):
 
 **Message Flow:**
 ```
-Client ←→ postMessage ←→ Gateway iframe
+1. Client → Gateway: Ready
+2. Gateway → Client: Display captcha/ad
+3. User completes captcha/views ad
+4. Gateway → Client: Peer list (SDP + ICE candidates)
+5. Client → Gateway: Own SDP + ICE candidates for each peer
+6. Gateway relays connection info
+7. Client ↔ Peers: WebRTC DataChannel established
 ```
+
+**Peer List Message Format:**
+```javascript
+{
+  type: "peers",
+  peers: [
+    {
+      id: "hash(sdp+ice)",
+      sdp: {...},
+      iceCandidates: [...]
+    },
+    ...
+  ]
+}
+```
+
+**Connection Limits:**
+- Maximum concurrent peer connections (e.g., 10-20)
+- Priority: closest peers by latency
+- Drop slowest connections when limit reached
 
 ### 3. Provide More FreeSpeech Gateways
 - Add additional gateway server URLs
