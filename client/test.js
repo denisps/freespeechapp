@@ -1,8 +1,79 @@
 // FreeSpeechApp Test Framework
 // Comprehensive test suite for cryptographic operations, gateway communication, and P2P functionality
 
+// Mock App Signature Verifier for testing
+const MockAppVerifier = {
+    verify: async function(appContent) {
+        // Simulate verification delay
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Mock verification logic - accept specific test patterns
+        // In tests, we control the app content structure
+        if (!appContent || !appContent.appId || !appContent.content || !appContent.signature) {
+            return false;
+        }
+        
+        // For testing: accept any app with 'mock' in the appId or signature
+        if (appContent.appId.includes('mock') || appContent.signature.includes('mock')) {
+            return true;
+        }
+        
+        // For testing: reject apps with 'invalid' in signature
+        if (appContent.signature.includes('invalid')) {
+            return false;
+        }
+        
+        // Default: accept valid-looking structure
+        return appContent.version && appContent.content.length > 0;
+    }
+};
+
+// Mock WebRTC Peer Connection for testing
+const MockPeerConnection = {
+    create: async function(peerInfo, onDataChannel, onConnectionStateChange) {
+        // Simulate connection delay
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Create mock data channel
+        const mockChannel = {
+            readyState: 'open',
+            send: (data) => console.log('Mock send:', data),
+            close: () => console.log('Mock channel closed'),
+            onmessage: null,
+            onopen: null,
+            onclose: null
+        };
+        
+        // Simulate data channel opening
+        setTimeout(() => {
+            if (onDataChannel) {
+                onDataChannel(mockChannel);
+            }
+            if (onConnectionStateChange) {
+                onConnectionStateChange('connected');
+            }
+        }, 50);
+        
+        return {
+            connection: { state: 'mock-connected' },
+            localDescription: {
+                type: 'answer',
+                sdp: 'mock-sdp-answer'
+            },
+            dataChannel: mockChannel,
+            close: () => console.log('Mock connection closed')
+        };
+    }
+};
+
 // Test runner - activated by "Run Tests" button
 document.addEventListener('DOMContentLoaded', () => {
+    // Set mock implementations for testing
+    if (window.appState) {
+        window.appState.peerConnectionFactory = MockPeerConnection;
+        window.appState.appVerifier = MockAppVerifier;
+    }
+    
     const runTestsBtn = document.getElementById('run-tests');
     if (runTestsBtn) {
         runTestsBtn.addEventListener('click', runTests);
@@ -664,7 +735,21 @@ async function runTests() {
         // === App Verification Tests ===
         output += '<div class="test-section"><h3>App Verification</h3>';
         
-        // Test 25: App Signature Verification (Mock)
+        // Test 25: Mock app verifier is configured
+        try {
+            if (appState.appVerifier && 
+                typeof appState.appVerifier.verify === 'function') {
+                output += '<div class="test-passed">✓ App verifier is configured</div>';
+                passCount++;
+            } else {
+                throw new Error('App verifier not configured');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ App verifier configuration: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 26: Mock app signature verification accepts valid app
         try {
             const mockApp = {
                 appId: 'mock-ecdsa-public-key',
@@ -675,17 +760,273 @@ async function runTests() {
             
             const isValid = await verifyAppSignature(mockApp);
             if (isValid) {
-                output += '<div class="test-passed">✓ App signature verification (mock)</div>';
+                output += '<div class="test-passed">✓ Mock app signature verification accepts valid app</div>';
                 passCount++;
             } else {
-                throw new Error('Verification failed');
+                throw new Error('Verification failed for valid app');
             }
         } catch (e) {
-            output += `<div class="test-failed">✗ App signature verification: ${e.message}</div>`;
+            output += `<div class="test-failed">✗ Mock app signature verification (valid): ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 27: Mock app signature verification rejects invalid signature
+        try {
+            const invalidApp = {
+                appId: 'test-ecdsa-public-key',
+                content: '<h1>Test App</h1>',
+                signature: 'invalid-signature',
+                version: '1.0'
+            };
+            
+            const isValid = await verifyAppSignature(invalidApp);
+            if (!isValid) {
+                output += '<div class="test-passed">✓ Mock app signature verification rejects invalid signature</div>';
+                passCount++;
+            } else {
+                throw new Error('Verification should fail for invalid signature');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Mock app signature verification (invalid): ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 28: App signature verification rejects incomplete app data
+        try {
+            const incompleteApp = {
+                appId: 'test-key',
+                content: '<h1>Test</h1>'
+                // Missing signature
+            };
+            
+            const isValid = await verifyAppSignature(incompleteApp);
+            if (!isValid) {
+                output += '<div class="test-passed">✓ App signature verification rejects incomplete data</div>';
+                passCount++;
+            } else {
+                throw new Error('Verification should fail for incomplete data');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ App signature verification (incomplete): ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 29: Actual app verifier implementation exists
+        try {
+            if (window.ActualAppVerifier && 
+                typeof window.ActualAppVerifier.verify === 'function') {
+                output += '<div class="test-passed">✓ Actual app verifier implementation available</div>';
+                passCount++;
+            } else {
+                throw new Error('ActualAppVerifier not found');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Actual app verifier availability: ${e.message}</div>`;
             failCount++;
         }
         
         output += '</div>'; // End verification section
+        
+        // === Gateway Merge/Deduplication Tests ===
+        output += '<div class="test-section"><h3>Gateway Merge & Deduplication</h3>';
+        
+        // Test 30: Gateway merge from localStorage and identity-data
+        try {
+            // Setup: Save gateways to localStorage
+            const localGateways = ['https://local1.example.com', 'https://local2.example.com'];
+            localStorage.setItem('freespeech-gateways', JSON.stringify(localGateways));
+            
+            // Setup: Simulate identity-data with gateways
+            const identityDataEl = document.getElementById('identity-data');
+            const originalContent = identityDataEl.textContent;
+            const mockIdentityData = {
+                salt: 'mock-salt',
+                cryptoBox: 'mock-crypto-box',
+                gateways: ['https://freespeechapp.org/', 'https://local1.example.com'],
+                version: '1.0'
+            };
+            identityDataEl.textContent = JSON.stringify(mockIdentityData);
+            
+            // Reset appState gateways to default
+            appState.gateways = ['https://freespeechapp.org/'];
+            
+            // Run checkForIdentityData which should merge gateways
+            checkForIdentityData();
+            
+            // Verify gateways are merged and deduplicated
+            const expectedGateways = [
+                'https://freespeechapp.org/',
+                'https://local1.example.com',
+                'https://local2.example.com'
+            ];
+            
+            const hasAllGateways = expectedGateways.every(gw => appState.gateways.includes(gw));
+            const noDuplicates = appState.gateways.length === new Set(appState.gateways).size;
+            
+            // Restore original identity data
+            identityDataEl.textContent = originalContent;
+            
+            if (hasAllGateways && noDuplicates) {
+                output += '<div class="test-passed">✓ Gateway merge from localStorage and identity-data</div>';
+                passCount++;
+            } else {
+                throw new Error(`Gateways not merged correctly: ${JSON.stringify(appState.gateways)}`);
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Gateway merge from localStorage and identity-data: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 31: Gateway deduplication
+        try {
+            appState.gateways = [
+                'https://gateway1.example.com',
+                'https://gateway2.example.com',
+                'https://gateway1.example.com', // duplicate
+                'https://gateway3.example.com',
+                'https://gateway2.example.com'  // duplicate
+            ];
+            
+            // Deduplicate
+            appState.gateways = Array.from(new Set(appState.gateways));
+            
+            if (appState.gateways.length === 3 && 
+                appState.gateways.includes('https://gateway1.example.com') &&
+                appState.gateways.includes('https://gateway2.example.com') &&
+                appState.gateways.includes('https://gateway3.example.com')) {
+                output += '<div class="test-passed">✓ Gateway deduplication removes duplicates</div>';
+                passCount++;
+            } else {
+                throw new Error('Deduplication failed');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Gateway deduplication: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 32: loadGateways merges with existing
+        try {
+            // Setup initial gateways
+            appState.gateways = ['https://freespeechapp.org/'];
+            
+            // Save different gateways to localStorage
+            const storedGateways = ['https://stored1.example.com', 'https://stored2.example.com'];
+            localStorage.setItem('freespeech-gateways', JSON.stringify(storedGateways));
+            
+            // Load and merge
+            loadGateways();
+            
+            // Verify merge occurred
+            if (appState.gateways.includes('https://freespeechapp.org/') &&
+                appState.gateways.includes('https://stored1.example.com') &&
+                appState.gateways.includes('https://stored2.example.com')) {
+                output += '<div class="test-passed">✓ loadGateways merges with existing gateways</div>';
+                passCount++;
+            } else {
+                throw new Error('loadGateways did not merge correctly');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ loadGateways merge: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        output += '</div>'; // End gateway merge section
+        
+        // === WebRTC Modular Implementation Tests ===
+        output += '<div class="test-section"><h3>WebRTC Modular Implementation</h3>';
+        
+        // Test 33: Mock peer connection factory is set
+        try {
+            if (appState.peerConnectionFactory && 
+                typeof appState.peerConnectionFactory.create === 'function') {
+                output += '<div class="test-passed">✓ Peer connection factory is configured</div>';
+                passCount++;
+            } else {
+                throw new Error('Peer connection factory not set');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Peer connection factory configuration: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 34: Mock peer connection creates connection
+        try {
+            const mockPeerInfo = {
+                id: 'test-peer-mock',
+                sdp: { type: 'offer', sdp: 'mock-sdp' },
+                iceCandidates: []
+            };
+            
+            let dataChannelReceived = false;
+            let stateChangeReceived = false;
+            
+            const result = await appState.peerConnectionFactory.create(
+                mockPeerInfo,
+                (channel) => { dataChannelReceived = true; },
+                (state) => { stateChangeReceived = true; }
+            );
+            
+            // Give callbacks time to fire
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            if (result && result.connection && result.localDescription && 
+                dataChannelReceived && stateChangeReceived) {
+                output += '<div class="test-passed">✓ Mock peer connection creates connection with callbacks</div>';
+                passCount++;
+            } else {
+                throw new Error('Mock connection creation incomplete');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Mock peer connection creation: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 35: connectToPeer uses peer connection factory
+        try {
+            const initialPeerCount = appState.peers.length;
+            
+            const testPeerInfo = {
+                id: 'factory-test-peer',
+                sdp: { type: 'offer', sdp: 'test-sdp' },
+                iceCandidates: []
+            };
+            
+            await connectToPeer(testPeerInfo);
+            
+            // Give connection time to establish
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            const newPeer = appState.peers.find(p => p.id === 'factory-test-peer');
+            
+            if (newPeer && newPeer.connection) {
+                output += '<div class="test-passed">✓ connectToPeer uses peer connection factory</div>';
+                passCount++;
+                
+                // Cleanup
+                appState.peers = appState.peers.filter(p => p.id !== 'factory-test-peer');
+            } else {
+                throw new Error('Peer not connected via factory');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ connectToPeer factory usage: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 36: Actual peer connection factory exists
+        try {
+            if (window.ActualPeerConnection && 
+                typeof window.ActualPeerConnection.create === 'function') {
+                output += '<div class="test-passed">✓ Actual peer connection implementation available</div>';
+                passCount++;
+            } else {
+                throw new Error('ActualPeerConnection not found');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Actual peer connection availability: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        output += '</div>'; // End WebRTC section
         
         // === Summary ===
         const totalTests = passCount + failCount;

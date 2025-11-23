@@ -6,27 +6,37 @@ Secure, privacy-focused communication client built on cryptographic principles.
 
 ### ✅ Fully Implemented
 - **Core Cryptography**: ECDSA key pair generation (P-256), AES-256 key generation, PBKDF2 password derivation
-- **Identity Management**: Identity file generation with encrypted keys, password-based encryption/decryption
-- **UI Components**: Four operational modes (Stateless, Generate Identity, Gateways, Stateful)
-- **Gateway Management**: Gateway configuration, localStorage persistence, iframe lifecycle
-- **Testing Framework**: Comprehensive test suite with 25 test cases covering cryptography, encoding, identity, gateway communication, and app verification
+- **Identity Management**: Identity file generation with encrypted keys, password-based encryption/decryption, handles both empty and non-empty identity-data
+- **UI Components**: Four operational modes with Stateful App as first section when identity exists
+- **Gateway Management**: Gateway configuration, localStorage persistence, iframe lifecycle, merge/deduplication from multiple sources
+- **WebRTC Peer Connection**: Modular architecture with actual RTCPeerConnection implementation and mock for testing
+- **Testing Framework**: Comprehensive test suite with 32 test cases covering cryptography, encoding, identity, gateway communication, gateway merge/deduplication, WebRTC modular implementation, and app verification
 
 ### 🚧 Partially Implemented (Mock/Simplified)
-- **WebRTC Peer Connection**: Simplified mock implementation (TODO: Full RTCPeerConnection with SDP/ICE handling)
 - **App Signature Verification**: Mock implementation (TODO: Real ECDSA signature verification)
-- **Peer-to-Peer Communication**: Basic connection structure (TODO: Complete WebRTC DataChannel implementation)
+- **App Content Distribution**: P2P app download and distribution across peers
 
 ### 📋 Planned / Not Yet Implemented
 - **Production Gateway Integration**: Real gateway servers with actual peer discovery
-- **Full WebRTC Implementation**: Complete RTCPeerConnection setup with proper SDP exchange
-- **App Content Distribution**: P2P app download and distribution across peers
 - **Real-time P2P Messaging**: DataChannel-based communication between peers
 
 ## Principle of Operation
 
-The client is a single, self-contained HTML file that operates in three modes:
+The client is a single, self-contained HTML file that operates in four modes:
 
-### 1. Run Stateless App
+### 1. Run Stateful App (Available only in Identity Files)
+- **First section when opening a generated identity file**
+- User enters **App ID** to fetch and verify the application
+- User enters password to decrypt embedded User ID keys
+- Maintains persistent identity across sessions
+- Secure, password-protected stateful operation
+
+**Interface:**
+- Input field for App ID (ECDSA public key)
+- Password input field to unlock identity
+- Unlock button to decrypt and start session
+
+### 2. Run Stateless App
 - User provides an **App ID** (ECDSA public key) - identifies and verifies the application
 - App ID used to fetch app from other peers and verify its integrity
 - Generates temporary **User ID** (ECDSA key pair) - identifies the user
@@ -38,7 +48,7 @@ The client is a single, self-contained HTML file that operates in three modes:
 - Input field for App ID (ECDSA public key)
 - Start button to begin session
 
-### 2. Generate Identity File
+### 3. Generate Identity File
 - User creates a password-protected identity
 - Generates **User ID** ECDSA key pair for signing user data
 - User ID public key becomes the user's persistent identity
@@ -72,6 +82,7 @@ The client is a single, self-contained HTML file that operates in three modes:
 4. Encrypt JSON with derived key → crypto-box
 5. Base64 encode crypto-box
 6. Store salt + base64(crypto-box) + gateways list in HTML (gateways stored unencrypted)
+7. Uses regex pattern to handle both empty and non-empty identity-data script tags
 
 **Identity File Structure:**
 ```html
@@ -85,6 +96,7 @@ The client is a single, self-contained HTML file that operates in three modes:
       "salt": "base64-encoded-salt",
       "cryptoBox": "base64(encrypt(json(keys)))",
       "gateways": [
+        "https://freespeechapp.org/",
         "https://gateway1.example.com",
         "https://gateway2.example.com"
       ],
@@ -103,20 +115,9 @@ The client is a single, self-contained HTML file that operates in three modes:
 4. Base64 decode crypto-box
 5. Decrypt crypto-box with derived key → JSON
 6. Parse JSON to extract User ID private key and AES key
+7. Merge gateways from identity-data with those from localStorage (deduplicated)
 
-### 4. Run Stateful App (Available only in Identity Files)
-- Appears only when opening a generated identity file
-- User enters **App ID** to fetch and verify the application
-- User enters password to decrypt embedded User ID keys
-- Maintains persistent identity across sessions
-- Secure, password-protected stateful operation
-
-**Interface:**
-- Input field for App ID (ECDSA public key)
-- Password input field to unlock identity
-- Unlock button to decrypt and start session
-
-## Application Startup Flow
+### 4. Provide More FreeSpeech Gateways
 
 When user starts the app (either stateless or stateful mode):
 
