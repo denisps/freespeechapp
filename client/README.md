@@ -92,6 +92,51 @@ The client is a single, self-contained HTML file that operates in three modes:
 - Password input field to unlock identity
 - Unlock button to decrypt and start session
 
+## Application Startup Flow
+
+When user starts the app (either stateless or stateful mode):
+
+1. **Key Preparation:**
+   - **Stateless mode:** User enters App ID (ECDSA private key) → generates temporary key
+   - **Stateful mode:** User enters password → decrypts embedded ECDSA private key
+
+2. **Gateway Selection:**
+   - Selects first gateway from configured list
+   - Creates iframe with gateway URL as `src`
+   - Iframe is small but visible to user
+
+3. **Gateway Communication:**
+   - Listens for `postMessage` events from gateway iframe
+   - Gateway presents content to user (ads, captcha, etc.)
+   - Two-way communication via `window.postMessage` API
+
+4. **Gateway UI:**
+   - Iframe wrapped with warning: "⚠️ Untrusted Gateway Content"
+   - "Next Gateway" button to switch to next in list
+   - Gateway may display ads, captcha, or other content
+
+**Gateway Iframe Structure:**
+```html
+<div class="gateway-container">
+  <div class="gateway-warning">
+    ⚠️ Untrusted Gateway Content
+    <button id="next-gateway">Next Gateway →</button>
+  </div>
+  <iframe 
+    id="gateway-frame" 
+    src="https://gateway1.example.com"
+    sandbox="allow-scripts allow-same-origin"
+    width="400"
+    height="200">
+  </iframe>
+</div>
+```
+
+**Message Flow:**
+```
+Client ←→ postMessage ←→ Gateway iframe
+```
+
 ### 3. Provide More FreeSpeech Gateways
 - Add additional gateway server URLs
 - Distributed trust model - no single point of failure
