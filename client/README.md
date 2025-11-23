@@ -36,11 +36,20 @@ The client is a single, self-contained HTML file that operates in three modes:
 - ECDSA public key = user identity (derived from private key)
 - ECDSA private key = signing key (encrypted)
 - AES-256 key generation for data encryption
-- PBKDF2 password derivation
-- Random salt generation
-- All keys encrypted into a crypto-box structure
-- Crypto-box base64 encoded for storage
+- PBKDF2 password derivation with random salt
+- Keys packaged into JSON structure
+- JSON encrypted with password-derived key
+- Encrypted data base64 encoded
+- Salt stored separately (needed for decryption)
 - Identity file is self-contained copy of the client with embedded credentials
+
+**Encryption Process:**
+1. Generate ECDSA private key + AES key
+2. Package keys into JSON: `{"ecdsaPrivateKey": "...", "aesKey": "..."}`
+3. Derive encryption key from password + salt using PBKDF2
+4. Encrypt JSON with derived key → crypto-box
+5. Base64 encode crypto-box
+6. Store salt + base64(crypto-box) in HTML
 
 **Identity File Structure:**
 ```html
@@ -50,23 +59,24 @@ The client is a single, self-contained HTML file that operates in three modes:
   <body>
     <!-- Client UI -->
     <script id="identity-data" type="text/plain">
-    eyJlbmNyeXB0ZWRFY2RzYVByaXZhdGVLZXkiOiIuLi4iLCJlbmNyeXB0ZWRBZXNL
-    ZXkiOiIuLi4iLCJzYWx0IjoiLi4uIiwidmVyc2lvbiI6IjEuMCJ9
+    {
+      "salt": "base64-encoded-salt",
+      "cryptoBox": "base64(encrypt(json(keys)))",
+      "version": "1.0"
+    }
     </script>
     <!-- Client logic -->
   </body>
 </html>
 ```
 
-**Crypto-box Content (before base64 encoding):**
-```json
-{
-  "encryptedEcdsaPrivateKey": "...",
-  "encryptedAesKey": "...",
-  "salt": "...",
-  "version": "1.0"
-}
-```
+**Decryption Process:**
+1. Read salt from identity-data
+2. User enters password
+3. Derive decryption key from password + salt using PBKDF2
+4. Base64 decode crypto-box
+5. Decrypt crypto-box with derived key → JSON
+6. Parse JSON to extract ECDSA private key and AES key
 
 ### 4. Run Stateful App (Available only in Identity Files)
 - Appears only when opening a generated identity file
