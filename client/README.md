@@ -10,7 +10,7 @@ Secure, privacy-focused communication client built on cryptographic principles.
 - **UI Components**: Four operational modes with Stateful App as first section when identity exists
 - **Gateway Management**: Gateway configuration, localStorage persistence, iframe lifecycle, merge/deduplication from multiple sources
 - **WebRTC Peer Connection**: Modular architecture with actual RTCPeerConnection implementation and mock for testing
-- **Testing Framework**: Comprehensive test suite with 32 test cases covering cryptography, encoding, identity, gateway communication, gateway merge/deduplication, WebRTC modular implementation, and app verification
+- **Testing Framework**: Comprehensive test suite with 36 test cases covering cryptography, encoding, identity, gateway communication, gateway merge/deduplication, WebRTC modular implementation, and app verification
 
 ### 🚧 Partially Implemented (Mock/Simplified)
 - **App Signature Verification**: Mock implementation (TODO: Real ECDSA signature verification)
@@ -118,6 +118,79 @@ The client is a single, self-contained HTML file that operates in four modes:
 7. Merge gateways from identity-data with those from localStorage (deduplicated)
 
 ### 4. Provide More FreeSpeech Gateways
+- Add additional gateway server URLs
+- Distributed trust model - no single point of failure
+- Routes through multiple gateways for enhanced privacy
+- Load balancing and redundancy
+- Gateways are merged from localStorage and identity-data (if present)
+- Automatic deduplication ensures no duplicate gateways
+- Default gateway: `https://freespeechapp.org/`
+- `mock-gateway.html` used only for testing
+
+**Interface:**
+- Text area for adding gateway URLs
+- Save/update gateway configuration
+
+**Gateway Storage and Merging:**
+- Default gateways: `['https://freespeechapp.org/', 'https://gateway1.example.com', 'https://gateway2.example.com']`
+- localStorage gateways are merged with default list
+- Identity files include gateways which are merged with localStorage gateways
+- All gateways are deduplicated using Set to ensure uniqueness
+- Priority: Identity-data gateways first, then localStorage gateways
+
+## WebRTC Peer Connection Architecture
+
+The client uses a modular architecture for WebRTC peer connections, allowing switching between actual and mock implementations:
+
+**Actual Implementation (Production):**
+- `ActualPeerConnection` - Uses real `RTCPeerConnection` API
+- Full SDP (Session Description Protocol) exchange
+- ICE (Interactive Connectivity Establishment) candidate handling
+- Creates RTCDataChannel for P2P communication
+- Proper connection state management
+
+**Mock Implementation (Testing):**
+- `MockPeerConnection` - Defined in `test.js` for testing
+- Simulates connection behavior without actual WebRTC
+- Allows testing without network dependencies
+- Injected via `appState.peerConnectionFactory`
+
+**Factory Pattern:**
+```javascript
+// Production (index.html)
+appState.peerConnectionFactory = ActualPeerConnection;
+
+// Testing (test.js)
+appState.peerConnectionFactory = MockPeerConnection;
+```
+
+## App Signature Verification Architecture
+
+The client uses a modular architecture for app signature verification:
+
+**Actual Implementation (Production):**
+- `ActualAppVerifier` - Uses Web Crypto API for ECDSA verification
+- Imports App ID as ECDSA public key (P-256 curve)
+- Verifies signature using `crypto.subtle.verify()`
+- Returns `false` if verification fails
+
+**Mock Implementation (Testing):**
+- `MockAppVerifier` - Defined in `test.js` for testing
+- Simulates verification logic for testing scenarios
+- Accepts apps with 'mock' in appId or signature
+- Rejects apps with 'invalid' in signature
+- Injected via `appState.appVerifier`
+
+**Factory Pattern:**
+```javascript
+// Production (index.html)
+appState.appVerifier = ActualAppVerifier;
+
+// Testing (test.js)
+appState.appVerifier = MockAppVerifier;
+```
+
+## Application Startup Flow
 
 When user starts the app (either stateless or stateful mode):
 
@@ -306,9 +379,9 @@ The testing framework includes a mock gateway for local development and testing:
 **Test Runner (`test.js`):** ✅ IMPLEMENTED
 - Inserted via `<script>` tag into the client
 - Triggered from toolbar "Run Tests" button
-- Runs automated test suite with 25 comprehensive test cases
+- Runs automated test suite with 36 comprehensive test cases
 - Reports test results in UI with color-coded pass/fail indicators
-- Covers: Cryptography, Data Encoding, Identity Management, Gateway Management, Application State, UI, Gateway Communication, and App Verification
+- Covers: Cryptography, Data Encoding, Identity Management, Gateway Management, Application State, UI, Gateway Communication, App Verification (modular), Gateway Merge/Deduplication, and WebRTC Modular Implementation
 
 **Mock Gateway (`mock-gateway.html`):** ✅ IMPLEMENTED
 - Local HTML file (no server required)
@@ -344,17 +417,19 @@ The testing framework includes a mock gateway for local development and testing:
 
 **Testing Flow:** ✅ IMPLEMENTED
 1. Click "Run Tests" button in toolbar
-2. test.js runs 25 automated test cases
+2. test.js runs 36 automated test cases
 3. Tests cryptographic operations (ECDSA, AES, PBKDF2)
 4. Tests identity generation and encryption/decryption
 5. Tests gateway configuration and lifecycle
 6. Tests mock gateway iframe creation and communication
 7. Tests postMessage workflow between client and gateway
 8. Tests peer data validation and structure
-9. Tests app signature verification (mock)
-10. Display comprehensive test results with pass/fail summary
+9. Tests app signature verification (modular with mock)
+10. Tests gateway merge/deduplication
+11. Tests WebRTC modular implementation
+12. Display comprehensive test results with pass/fail summary
 
-**Test Categories:** ✅ IMPLEMENTED (25 Tests Total)
+**Test Categories:** ✅ IMPLEMENTED (36 Tests Total)
 1. **Cryptographic Operations** (5 tests)
    - ECDSA key pair generation (P-256 curve)
    - AES-256 key generation
@@ -393,8 +468,23 @@ The testing framework includes a mock gateway for local development and testing:
    - Mock gateway peer data validation
    - Gateway ready message structure
 
-8. **App Verification** (1 test)
-   - App signature verification (mock)
+8. **App Verification** (5 tests)
+   - App verifier is configured
+   - Mock app signature verification accepts valid app
+   - Mock app signature verification rejects invalid signature
+   - App signature verification rejects incomplete data
+   - Actual app verifier implementation available
+
+9. **Gateway Merge & Deduplication** (3 tests)
+   - Gateway merge from localStorage and identity-data
+   - Gateway deduplication removes duplicates
+   - loadGateways merges with existing gateways
+
+10. **WebRTC Modular Implementation** (4 tests)
+    - Peer connection factory is configured
+    - Mock peer connection creates connection with callbacks
+    - connectToPeer uses peer connection factory
+    - Actual peer connection implementation available
 
 **Mock App Content Structure:**
 ```javascript
