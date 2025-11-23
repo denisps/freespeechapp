@@ -277,3 +277,47 @@ The default polling interval is 2 seconds. To change it, edit `app.js`:
 ```javascript
 const POLL_INTERVAL = 2000; // milliseconds
 ```
+
+## Testing Framework
+
+The testing framework includes a mock gateway for local development and testing:
+
+**Mock Gateway (`mock-gateway.html`):**
+- Local HTML file (no server required)
+- Generates mock peers with realistic WebRTC connection data
+- Includes embedded mock App Content signed with real App ID
+- Tests complete peer communication flow
+- Verifies app download and signature verification
+
+**Mock Gateway Features:**
+- Simulates captcha/ad completion
+- Generates configurable number of mock peers
+- Each mock peer has valid SDP and ICE candidates
+- Mock App Content signed with ECDSA (real App ID)
+- Tests peer discovery, connection, and data exchange
+
+**Usage:**
+```bash
+# Open client with mock gateway URL
+file:///path/to/mock-gateway.html
+```
+
+**Testing Flow:**
+1. Open client (stateless or stateful mode)
+2. Enter mock gateway URL as gateway
+3. Complete mock captcha (instant)
+4. Receive mock peer list (3-20 peers)
+5. Test WebRTC connection establishment
+6. Download and verify mock App Content
+7. Verify app signature with App ID
+8. Test P2P communication between mock peers
+
+**Mock App Content Structure:**
+```javascript
+{
+  appId: "ecdsa-public-key",
+  content: "...app-code...",
+  signature: "ecdsa-signature",
+  version: "1.0"
+}
+```
