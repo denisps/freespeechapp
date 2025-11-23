@@ -902,32 +902,8 @@
             appContentEl.style.display = 'none';
             peerInfo.style.display = 'none';
             
-            // Create HTML document for iframe with app content
-            const appHtml = '<!DOCTYPE html>\n' +
-                '<html>\n' +
-                '<head>\n' +
-                '    <meta charset="UTF-8">\n' +
-                '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-                '    <title>FreeSpeech App</title>\n' +
-                '    <style>\n' +
-                '        body {\n' +
-                '            margin: 0;\n' +
-                '            padding: 20px;\n' +
-                '            font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;\n' +
-                '        }\n' +
-                '    </style>\n' +
-                '</head>\n' +
-                '<body>\n' +
-                '    ' + content + '\n' +
-                '    <script>\n' +
-                '        // App can communicate with parent via postMessage\n' +
-                '        console.log(\'App loaded in iframe\');\n' +
-                '    <\/script>\n' +
-                '</body>\n' +
-                '</html>';
-            
-            // Load content in iframe
-            const blob = new Blob([appHtml], { type: 'text/html' });
+            // Load app content directly as blob (content is already a proper HTML document)
+            const blob = new Blob([content], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             appIframe.src = url;
             appIframe.classList.add('active');
