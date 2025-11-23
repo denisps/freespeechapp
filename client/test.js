@@ -645,23 +645,14 @@ async function runTests() {
         try {
             // Simulate sending ready message to gateway
             const readyMessage = { type: 'ready' };
-            let messageSent = false;
             
-            try {
-                // In real scenario, this would be sent to iframe.contentWindow
-                // For testing, we just validate the message structure
-                if (readyMessage.type === 'ready') {
-                    messageSent = true;
-                }
-            } catch (err) {
-                throw new Error('Failed to send ready message');
-            }
-            
-            if (messageSent) {
+            // In real scenario, this would be sent to iframe.contentWindow
+            // For testing, we just validate the message structure
+            if (readyMessage.type === 'ready') {
                 output += '<div class="test-passed">✓ Gateway ready message structure</div>';
                 passCount++;
             } else {
-                throw new Error('Ready message not sent');
+                throw new Error('Invalid ready message structure');
             }
         } catch (e) {
             output += `<div class="test-failed">✗ Gateway ready message sending: ${e.message}</div>`;
