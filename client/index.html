@@ -541,9 +541,21 @@
                         document.getElementById('mode-stateful').style.display = 'block';
                         appState.isStateful = true;
                         
-                        // Set gateways from identity-data if present
+                        // Set gateways from identity-data if present and merge with localStorage
                         if (identityData.gateways && Array.isArray(identityData.gateways) && identityData.gateways.length > 0) {
                             appState.gateways = identityData.gateways;
+                            
+                            // Merge with localStorage gateways
+                            const stored = localStorage.getItem('freespeech-gateways');
+                            if (stored) {
+                                try {
+                                    const localGateways = JSON.parse(stored);
+                                    const allGateways = [...appState.gateways, ...localGateways];
+                                    appState.gateways = Array.from(new Set(allGateways));
+                                } catch (e) {
+                                    console.error('Failed to parse localStorage gateways:', e);
+                                }
+                            }
                         }
                     }
                 } catch (e) {
