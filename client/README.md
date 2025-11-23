@@ -282,6 +282,12 @@ const POLL_INTERVAL = 2000; // milliseconds
 
 The testing framework includes a mock gateway for local development and testing:
 
+**Test Runner (`test.js`):**
+- Inserted via `<script>` tag into the client
+- Triggered from toolbar "Run Tests" button
+- Runs automated test suite
+- Reports test results in UI
+
 **Mock Gateway (`mock-gateway.html`):**
 - Local HTML file (no server required)
 - Generates mock peers with realistic WebRTC connection data
@@ -296,21 +302,42 @@ The testing framework includes a mock gateway for local development and testing:
 - Mock App Content signed with ECDSA (real App ID)
 - Tests peer discovery, connection, and data exchange
 
+**Testing Integration:**
+```html
+<!-- Include test.js in client -->
+<script src="test.js"></script>
+
+<!-- Toolbar button -->
+<button id="run-tests">Run Tests</button>
+```
+
 **Usage:**
 ```bash
-# Open client with mock gateway URL
-file:///path/to/mock-gateway.html
+# Open client with test.js loaded
+# Click "Run Tests" in toolbar
+# Or programmatically: runTests()
 ```
 
 **Testing Flow:**
-1. Open client (stateless or stateful mode)
-2. Enter mock gateway URL as gateway
-3. Complete mock captcha (instant)
-4. Receive mock peer list (3-20 peers)
-5. Test WebRTC connection establishment
-6. Download and verify mock App Content
-7. Verify app signature with App ID
-8. Test P2P communication between mock peers
+1. Click "Run Tests" button in toolbar
+2. test.js initializes mock gateway
+3. Simulates user actions (enter App ID, start session)
+4. Complete mock captcha (instant)
+5. Receive mock peer list (3-20 peers)
+6. Test WebRTC connection establishment
+7. Download and verify mock App Content
+8. Verify app signature with App ID
+9. Test P2P communication between mock peers
+10. Display test results in UI
+
+**Test Categories:**
+- Identity generation and encryption/decryption
+- App ID verification and signature validation
+- Gateway communication (postMessage)
+- WebRTC peer connection establishment
+- App content download and verification
+- P2P data exchange
+- UI interactions and state management
 
 **Mock App Content Structure:**
 ```javascript
