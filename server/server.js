@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const PORT = process.env.PORT || 443;
+const HTTP_PORT = process.env.HTTP_PORT || 80;
+const HTTPS_PORT = process.env.HTTPS_PORT || 443;
 const USE_HTTPS = process.env.USE_HTTPS !== 'false';
 const CERT_PATH = process.env.CERT_PATH || path.join(__dirname, 'certs');
 const MESSAGE_RETENTION_TIME = 30000; // 30 seconds
@@ -274,6 +275,8 @@ function handleRequest(req, res) {
 const server = USE_HTTPS && serverOptions.cert
   ? https.createServer(serverOptions, handleRequest)
   : http.createServer(handleRequest);
+
+const PORT = USE_HTTPS && serverOptions.cert ? HTTPS_PORT : HTTP_PORT;
 
 server.listen(PORT, () => {
   const protocol = USE_HTTPS && serverOptions.cert ? 'https' : 'http';

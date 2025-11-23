@@ -3,6 +3,8 @@
 
 set -e
 
+NODE_VERSION="18"
+
 echo "FreeSpeechApp Bootstrap for Ubuntu/Debian"
 echo "=========================================="
 
@@ -16,8 +18,14 @@ fi
 apt-get update
 
 # Install prerequisites
-apt-get install -y curl git openssl
+apt-get install -y curl git openssl ca-certificates gnupg
 
-# Run main installation script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-bash "$SCRIPT_DIR/install.sh"
+# Install Node.js from NodeSource
+if ! command -v node &> /dev/null; then
+    echo "Installing Node.js ${NODE_VERSION}..."
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
+    apt-get install -y nodejs
+    echo "Node.js $(node --version) installed"
+else
+    echo "Node.js $(node --version) already installed"
+fi
