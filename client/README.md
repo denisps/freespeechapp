@@ -49,7 +49,7 @@ The client is a single, self-contained HTML file that operates in three modes:
 3. Derive encryption key from password + salt using PBKDF2
 4. Encrypt JSON with derived key → crypto-box
 5. Base64 encode crypto-box
-6. Store salt + base64(crypto-box) in HTML
+6. Store salt + base64(crypto-box) + gateways list in HTML (gateways stored unencrypted)
 
 **Identity File Structure:**
 ```html
@@ -58,10 +58,14 @@ The client is a single, self-contained HTML file that operates in three modes:
   <head>...</head>
   <body>
     <!-- Client UI -->
-    <script id="identity-data" type="text/plain">
+    <script id="identity-data" type="application/json">
     {
       "salt": "base64-encoded-salt",
       "cryptoBox": "base64(encrypt(json(keys)))",
+      "gateways": [
+        "https://gateway1.example.com",
+        "https://gateway2.example.com"
+      ],
       "version": "1.0"
     }
     </script>
