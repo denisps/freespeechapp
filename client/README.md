@@ -33,12 +33,13 @@ The client is a single, self-contained HTML file that operates in three modes:
 
 **Technical Details:**
 - ECDSA key pair generation (P-256 curve)
-- ECDSA public key = user identity
+- ECDSA public key = user identity (derived from private key)
 - ECDSA private key = signing key (encrypted)
 - AES-256 key generation for data encryption
 - PBKDF2 password derivation
 - Random salt generation
-- All keys encrypted and stored in `<script>` tag within HTML
+- All keys encrypted into a crypto-box structure
+- Crypto-box base64 encoded for storage
 - Identity file is self-contained copy of the client with embedded credentials
 
 **Identity File Structure:**
@@ -48,18 +49,23 @@ The client is a single, self-contained HTML file that operates in three modes:
   <head>...</head>
   <body>
     <!-- Client UI -->
-    <script id="identity-data" type="application/json">
-    {
-      "encryptedEcdsaPrivateKey": "...",
-      "ecdsaPublicKey": "...",
-      "encryptedAesKey": "...",
-      "salt": "...",
-      "version": "1.0"
-    }
+    <script id="identity-data" type="text/plain">
+    eyJlbmNyeXB0ZWRFY2RzYVByaXZhdGVLZXkiOiIuLi4iLCJlbmNyeXB0ZWRBZXNL
+    ZXkiOiIuLi4iLCJzYWx0IjoiLi4uIiwidmVyc2lvbiI6IjEuMCJ9
     </script>
     <!-- Client logic -->
   </body>
 </html>
+```
+
+**Crypto-box Content (before base64 encoding):**
+```json
+{
+  "encryptedEcdsaPrivateKey": "...",
+  "encryptedAesKey": "...",
+  "salt": "...",
+  "version": "1.0"
+}
 ```
 
 ### 4. Run Stateful App (Available only in Identity Files)
