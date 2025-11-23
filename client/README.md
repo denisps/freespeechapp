@@ -277,7 +277,3 @@ The default polling interval is 2 seconds. To change it, edit `app.js`:
 ```javascript
 const POLL_INTERVAL = 2000; // milliseconds
 ```
-
-## Security Note
-
-When connecting to a server with a self-signed certificate, your browser will show a security warning. You'll need to accept the certificate to proceed. For production use, consider using a certificate from a trusted Certificate Authority.
