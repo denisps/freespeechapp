@@ -84,6 +84,46 @@ function cleanOldMessages() {
 // Run cleanup every 10 seconds
 setInterval(cleanOldMessages, 10000);
 
+// MIME types for static files
+const mimeTypes = {
+  '.html': 'text/html',
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp'
+};
+
+// Serve static files from public directory
+function serveStaticFile(res, filePath) {
+  const extname = path.extname(filePath).toLowerCase();
+  const contentType = mimeTypes[extname] || 'application/octet-stream';
+  
+  fs.readFile(filePath, (err, content) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('File not found');
+      } else {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Server error');
+      }
+      return;
+    }
+    
+    res.writeHead(200, { 
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=86400' // Cache for 1 day
+    });
+    res.end(content);
+  });
+}
+
 // Serve home page
 function serveHomePage(res) {
   const homePath = path.join(__dirname, 'public', 'index.html');
@@ -120,29 +160,63 @@ function handleRequest(req, res) {
     return;
   }
   
-  // Check if API is enabled
-  if (!API_ENABLED && pathname !== '/health') {
-    sendJSON(res, 503, { 
-      error: 'API is currently disabled. The service is under development.',
-      message: 'Please visit https://github.com/denisps/freespeechapp for more information.'
-    });
+  // Serve favicon
+  if (pathname === '/favicon.ico' && req.method === 'GET') {
+    const faviconPath = path.join(__dirname, 'public', 'favicon.ico');
+    serveStaticFile(res, faviconPath);
     return;
   }
   
-  // Health check (always enabled)
-  if (pathname === '/health' && req.method === 'GET') {
-    sendJSON(res, 200, {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      clients: clients.size,
-      messages: messages.length,
-      apiEnabled: API_ENABLED
-    });
-    return;
+  // Serve static files from public directory
+  if (req.method === 'GET' && pathname.startsWith('/')) {
+    // Security check: prevent directory traversal
+    const safePath = pathname.split('..').join('');
+    const filePath = path.join(__dirname, 'public', safePath);
+    
+    // Only serve files that exist and are within public directory
+    const publicDir = path.join(__dirname, 'public');
+    const resolvedPath = path.resolve(filePath);
+    
+    if (resolvedPath.startsWith(publicDir)) {
+      fs.access(filePath, fs.constants.F_OK, (err) => {
+        if (!err) {
+          serveStaticFile(res, filePath);
+        } else {
+          // File doesn't exist, continue to API routes
+          checkApiRoutes();
+        }
+      });
+      return;
+    }
   }
   
-  // Connect - register a client
-  if (pathname === '/connect' && req.method === 'POST') {
+  // Continue to API routes
+  checkApiRoutes();
+  
+  function checkApiRoutes() {
+    // Check if API is enabled
+    if (!API_ENABLED && pathname !== '/health') {
+      sendJSON(res, 503, { 
+        error: 'API is currently disabled. The service is under development.',
+        message: 'Please visit https://github.com/denisps/freespeechapp for more information.'
+      });
+      return;
+    }
+    
+    // Health check endpoint
+    if (pathname === '/health' && req.method === 'GET') {
+      sendJSON(res, 200, {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        clients: clients.size,
+        messages: messages.length,
+        apiEnabled: API_ENABLED
+      });
+      return;
+    }
+  
+    // Connect - register a client
+    if (pathname === '/connect' && req.method === 'POST') {
     const clientId = `client_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     clients.set(clientId, {
       id: clientId,
@@ -269,6 +343,7 @@ function handleRequest(req, res) {
   
   // Not found
   sendJSON(res, 404, { error: 'Not found' });
+  }
 }
 
 // Create server

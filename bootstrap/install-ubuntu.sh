@@ -3,7 +3,7 @@
 
 set -e
 
-NODE_VERSION="18"
+NODE_VERSION="23"
 
 echo "FreeSpeechApp Bootstrap for Ubuntu/Debian"
 echo "=========================================="
