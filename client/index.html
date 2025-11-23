@@ -476,7 +476,7 @@
                 const identityJson = JSON.stringify(identityData, null, 2);
                 const newHtml = currentHtml.replace(
                     /<script id="identity-data" type="application\/json"><\/script>/,
-                    `<script id="identity-data" type="application/json">\n${identityJson}\n    </script>`
+                    `<script id="identity-data" type="application/json">\n${identityJson}\n    <\/script>`
                 );
                 
                 const blob = new Blob([newHtml], { type: 'text/html' });
@@ -829,6 +829,25 @@
                 indicator.textContent = '⚫';
             }
         }
+
+        // Expose functions to global scope for test.js
+        window.appState = appState;
+        window.generateECDSAKeyPair = generateECDSAKeyPair;
+        window.generateAESKey = generateAESKey;
+        window.deriveKeyFromPassword = deriveKeyFromPassword;
+        window.encryptData = encryptData;
+        window.decryptData = decryptData;
+        window.arrayBufferToBase64 = arrayBufferToBase64;
+        window.base64ToArrayBuffer = base64ToArrayBuffer;
+        window.checkForIdentityData = checkForIdentityData;
+        window.loadGateways = loadGateways;
+        window.showStatus = showStatus;
+        window.connectToPeer = connectToPeer;
+        window.verifyAppSignature = verifyAppSignature;
+        window.startStatelessApp = startStatelessApp;
+        window.generateIdentity = generateIdentity;
+        window.saveGateways = saveGateways;
+        window.startStatefulApp = startStatefulApp;
 
         // Test framework is loaded from test.js
     </script>
