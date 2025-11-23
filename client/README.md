@@ -20,19 +20,50 @@ The client is a single, self-contained HTML file that operates in three modes:
 - User creates a password-protected identity
 - Generates AES-256 encryption key
 - Encrypts key with user password using PBKDF2 + salt
-- Exports encrypted identity as downloadable HTML file
-- Identity file can be opened to restore session
+- Exports encrypted identity as a downloadable HTML file (copy of the client itself)
+- Encrypted keys embedded in a `<script>` tag within the HTML
+- Opening the identity file reveals a 4th section: **Run Stateful App**
 
 **Interface:**
 - Password input field
 - Generate button
-- Downloads encrypted identity as HTML blob
+- Downloads identity file as HTML blob
 
 **Technical Details:**
 - AES-256 key generation
 - PBKDF2 password derivation
 - Random salt generation
-- Encrypted key + salt stored in HTML file
+- Encrypted key + salt stored in `<script>` tag within HTML
+- Identity file is self-contained copy of the client with embedded credentials
+
+**Identity File Structure:**
+```html
+<!DOCTYPE html>
+<html>
+  <head>...</head>
+  <body>
+    <!-- Client UI -->
+    <script id="identity-data" type="application/json">
+    {
+      "encryptedKey": "...",
+      "salt": "...",
+      "version": "1.0"
+    }
+    </script>
+    <!-- Client logic -->
+  </body>
+</html>
+```
+
+### 4. Run Stateful App (Available only in Identity Files)
+- Appears only when opening a generated identity file
+- User enters password to decrypt embedded keys
+- Maintains persistent identity across sessions
+- Secure, password-protected stateful operation
+
+**Interface:**
+- Password input field to unlock identity
+- Unlock button to decrypt and start session
 
 ### 3. Provide More FreeSpeech Gateways
 - Add additional gateway server URLs
