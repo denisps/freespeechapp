@@ -849,31 +849,28 @@ async function runTests() {
             const mockIdentityData = {
                 salt: 'mock-salt',
                 cryptoBox: 'mock-crypto-box',
-                gateways: ['https://freespeechapp.org/', 'https://local1.example.com'],
+                gateways: ['https://identity1.example.com', 'https://local1.example.com'],
                 version: '1.0'
             };
             identityDataEl.textContent = JSON.stringify(mockIdentityData);
             
-            // Reset appState gateways to default
-            appState.gateways = ['https://freespeechapp.org/'];
+            // Reset appState gateways to empty (as it starts on load)
+            appState.gateways = [];
             
             // Run checkForIdentityData which should merge gateways
             checkForIdentityData();
             
-            // Verify gateways are merged and deduplicated
-            const expectedGateways = [
-                'https://freespeechapp.org/',
-                'https://local1.example.com',
-                'https://local2.example.com'
-            ];
-            
-            const hasAllGateways = expectedGateways.every(gw => appState.gateways.includes(gw));
+            // Verify gateways are merged and deduplicated (should have 3: identity1, local1, local2)
+            const hasIdentity1 = appState.gateways.includes('https://identity1.example.com');
+            const hasLocal1 = appState.gateways.includes('https://local1.example.com');
+            const hasLocal2 = appState.gateways.includes('https://local2.example.com');
             const noDuplicates = appState.gateways.length === new Set(appState.gateways).size;
+            const correctCount = appState.gateways.length === 3;
             
             // Restore original identity data
             identityDataEl.textContent = originalContent;
             
-            if (hasAllGateways && noDuplicates) {
+            if (hasIdentity1 && hasLocal1 && hasLocal2 && noDuplicates && correctCount) {
                 output += '<div class="test-passed">✓ Gateway merge from localStorage and identity-data</div>';
                 passCount++;
             } else {
