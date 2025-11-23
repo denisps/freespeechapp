@@ -1,6 +1,6 @@
 #!/bin/sh
 # FreeSpeechApp Admin Deployment Script
-# Simple remote server management tool
+# Simple remote server deployment tool
 
 VERSION="1.0.0"
 CONFIG_FILE="${1:-./freespeech-admin.conf}"
@@ -19,7 +19,8 @@ SERVER_PASSWORD=""  # Optional - leave empty for SSH key
 SERVER_TYPE="nodejs"  # nodejs or php
 STORAGE_LIMIT="10G"
 RAM_LIMIT="1G"
-APP_PORT="8443"
+HTTP_PORT="80"
+HTTPS_PORT="443"
 INSTALL_DIR="/opt/freespeechapp"
 REPO_URL="https://github.com/denisps/freespeechapp.git"
 EOF
@@ -38,8 +39,15 @@ fi
 
 # Set defaults
 SERVER_PORT="${SERVER_PORT:-22}"
-SERVER_TYPE="${SERVER_TYPE:-nodejs}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/freespeechapp}"
+REPO_URL="${REPO_URL:-https://github.com/denisps/freespeechapp.git}"
+
+# Set remaining defaults
+SERVER_TYPE="${SERVER_TYPE:-nodejs}"
+STORAGE_LIMIT="${STORAGE_LIMIT:-10G}"
+RAM_LIMIT="${RAM_LIMIT:-1G}"
+HTTP_PORT="${HTTP_PORT:-80}"
+HTTPS_PORT="${HTTPS_PORT:-443}"
 
 # Build SSH command
 if [ -n "$SERVER_PASSWORD" ] && command -v sshpass >/dev/null 2>&1; then
@@ -50,95 +58,79 @@ fi
 
 # Execute remote command
 remote() {
-    eval "$SSH_CMD" "$1"
+    $SSH_CMD "$1"
 }
 
-# Main menu
-show_menu() {
-    echo ""
-    echo "FreeSpeechApp Admin - $SERVER_HOST"
-    echo "======================================"
-    echo "1) Check status"
-    echo "2) Deploy/Install"
-    echo "3) Update app"
-    echo "4) Restart service"
-    echo "5) View logs"
-    echo "6) Check updates available"
-    echo "0) Exit"
-    echo ""
-    printf "Choice: "
-    read -r choice
-    
-    case $choice in
-        1) 
-            remote "systemctl status freespeechapp 2>/dev/null || echo 'Not installed'"
-            remote "node --version 2>/dev/null || echo 'Node.js not installed'"
-            ;;
-        2)
-            if [ "$SERVER_TYPE" = "nodejs" ]; then
-                echo "Deploying Node.js server..."
-                remote "export REPO_URL='$REPO_URL' && curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash"
-            else
-                echo "PHP not yet implemented"
-            fi
-            ;;
-        3)
-            echo "Updating app..."
-            remote "cd $INSTALL_DIR && git pull && systemctl restart freespeechapp"
-            ;;
-        4)
-            echo "Restarting service..."
-            remote "systemctl restart freespeechapp"
-            ;;
-        5)
-            remote "journalctl -u freespeechapp -n 50 --no-pager"
-            ;;
-        6)
-            echo "Checking updates..."
-            remote "cd $INSTALL_DIR 2>/dev/null && git fetch && git status -uno" || echo "Not installed"
-            ;;
-        0) exit 0 ;;
-        *) echo "Invalid choice" ;;
-    esac
-}
+# Main deployment
+echo "FreeSpeechApp Deployment"
+echo "========================"
+echo "Server: $SERVER_HOST"
+echo "Install Dir: $INSTALL_DIR"
+echo "HTTP Port: $HTTP_PORT"
+echo "HTTPS Port: $HTTPS_PORT"
+echo ""
 
 # Check connectivity
 echo "Connecting to $SERVER_HOST..."
-if ! remote "echo 'Connected'" | grep -q "Connected"; then
+if ! remote "echo 'Connected'"; then
     echo "Error: Cannot connect to server"
+    echo "Make sure SSH keys are set up or use: ssh-copy-id -p $SERVER_PORT $SERVER_USER@$SERVER_HOST"
     exit 1
 fi
 
 echo "Connected successfully"
+echo ""
 
-# Check if installed
-if remote "systemctl is-active freespeechapp >/dev/null 2>&1"; then
-    echo "Status: Running"
+# Copy config file to remote server
+echo "Copying configuration to server..."
+CONFIG_REMOTE="/tmp/freespeech-deploy.conf"
+scp -P "$SERVER_PORT" "$CONFIG_FILE" "$SERVER_USER@$SERVER_HOST:$CONFIG_REMOTE"
+
+# Check if already deployed
+if remote "systemctl is-active --quiet freespeechapp 2>/dev/null"; then
+    echo "FreeSpeechApp is already deployed. Running update..."
+    echo ""
     
-    # Check for updates
-    if remote "cd $INSTALL_DIR 2>/dev/null && git fetch >/dev/null 2>&1 && [ \$(git rev-list HEAD..origin/main --count) -gt 0 ]"; then
-        echo "Updates available!"
-        printf "Update now? (y/N) "
-        read -r answer
-        [ "$answer" = "y" ] && remote "cd $INSTALL_DIR && git pull && systemctl restart freespeechapp" && echo "Updated"
-    else
-        echo "Up to date"
-    fi
-elif remote "[ -d $INSTALL_DIR ]"; then
-    echo "Status: Stopped"
-    printf "Start service? (y/N) "
-    read -r answer
-    [ "$answer" = "y" ] && remote "systemctl start freespeechapp"
+    # Update system packages
+    echo "Updating system packages..."
+    remote "
+        if command -v apt-get >/dev/null 2>&1; then
+            apt-get update && apt-get upgrade -y
+        elif command -v dnf >/dev/null 2>&1; then
+            dnf upgrade -y
+        elif command -v yum >/dev/null 2>&1; then
+            yum update -y
+        fi
+    "
+    
+    # Update repository
+    echo "Updating repository..."
+    remote "cd $INSTALL_DIR && git fetch && git pull"
+    
+    # Update dependencies
+    echo "Updating dependencies..."
+    remote "cd $INSTALL_DIR/server && npm install --production"
+    
+    # Update systemd service with new config
+    echo "Updating service configuration..."
+    remote "export REPO_URL='$REPO_URL' INSTALL_DIR='$INSTALL_DIR' HTTP_PORT='$HTTP_PORT' HTTPS_PORT='$HTTPS_PORT' STORAGE_LIMIT='$STORAGE_LIMIT' RAM_LIMIT='$RAM_LIMIT' && curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash -s -- --update-only"
+    
+    # Restart service
+    echo "Restarting service..."
+    remote "systemctl restart freespeechapp"
+    
+    echo ""
+    echo "Update complete!"
 else
-    echo "Status: Not installed"
-    printf "Install now? (y/N) "
-    read -r answer
-    if [ "$answer" = "y" ]; then
-        remote "export REPO_URL='$REPO_URL' && curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash"
-    fi
+    # Run fresh installation
+    echo "Starting fresh deployment from GitHub..."
+    remote "export REPO_URL='$REPO_URL' INSTALL_DIR='$INSTALL_DIR' HTTP_PORT='$HTTP_PORT' HTTPS_PORT='$HTTPS_PORT' STORAGE_LIMIT='$STORAGE_LIMIT' RAM_LIMIT='$RAM_LIMIT' && curl -fsSL https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap/install.sh | bash"
+    
+    echo ""
+    echo "Deployment complete!"
 fi
-
-# Interactive menu loop
-while true; do
-    show_menu
-done
+echo ""
+echo "To manage the server, SSH in and use:"
+echo "  systemctl status freespeechapp"
+echo "  systemctl restart freespeechapp"
+echo "  journalctl -u freespeechapp -f"

@@ -4,15 +4,32 @@
 
 set -e
 
+# Check for update-only flag
+UPDATE_ONLY=false
+if [ "$1" = "--update-only" ]; then
+    UPDATE_ONLY=true
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Load configuration from file if available
+CONFIG_FILE="${CONFIG_FILE:-/tmp/freespeech-deploy.conf}"
+if [ -f "$CONFIG_FILE" ]; then
+    echo -e "${GREEN}Loading configuration from $CONFIG_FILE${NC}"
+    . "$CONFIG_FILE"
+fi
+
 # Configuration
 REPO_URL="${REPO_URL:-https://github.com/denisps/freespeechapp.git}"
-INSTALL_DIR="/opt/freespeechapp"
+INSTALL_DIR="${INSTALL_DIR:-/opt/freespeechapp}"
+HTTP_PORT="${HTTP_PORT:-80}"
+HTTPS_PORT="${HTTPS_PORT:-443}"
+STORAGE_LIMIT="${STORAGE_LIMIT:-10G}"
+RAM_LIMIT="${RAM_LIMIT:-1G}"
 SERVICE_NAME="freespeechapp"
 NODE_VERSION="18"
 
@@ -42,24 +59,28 @@ detect_distro() {
 install_nodejs() {
     echo -e "${YELLOW}Installing Node.js...${NC}"
     
+    # Download and run platform-specific script from GitHub
+    PLATFORM_SCRIPT=""
     case $DISTRO in
         ubuntu|debian)
-            curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
-            apt-get install -y nodejs git
+            PLATFORM_SCRIPT="install-ubuntu.sh"
             ;;
-        centos|rhel|fedora)
-            curl -fsSL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | bash -
-            if [ "$DISTRO" = "fedora" ]; then
-                dnf install -y nodejs git
-            else
-                yum install -y nodejs git
-            fi
+        centos|rhel)
+            PLATFORM_SCRIPT="install-centos.sh"
+            ;;
+        fedora)
+            PLATFORM_SCRIPT="install-fedora.sh"
             ;;
         *)
             echo -e "${RED}Unsupported distribution: $DISTRO${NC}"
             exit 1
             ;;
     esac
+    
+    # Download and execute platform-specific installer from GitHub
+    echo -e "${YELLOW}Downloading platform installer for $DISTRO...${NC}"
+    GITHUB_RAW="https://raw.githubusercontent.com/denisps/freespeechapp/main/bootstrap"
+    curl -fsSL "$GITHUB_RAW/$PLATFORM_SCRIPT" | bash
     
     echo -e "${GREEN}Node.js $(node --version) installed${NC}"
 }
@@ -121,7 +142,10 @@ Type=simple
 User=root
 WorkingDirectory=$INSTALL_DIR/server
 Environment=NODE_ENV=production
-Environment=PORT=8443
+Environment=HTTP_PORT=$HTTP_PORT
+Environment=HTTPS_PORT=$HTTPS_PORT
+Environment=STORAGE_LIMIT=$STORAGE_LIMIT
+Environment=RAM_LIMIT=$RAM_LIMIT
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=10
@@ -146,15 +170,17 @@ configure_firewall() {
     case $DISTRO in
         ubuntu|debian)
             if command -v ufw &> /dev/null; then
-                ufw allow 8443/tcp
-                echo -e "${GREEN}UFW rule added for port 8443${NC}"
+                ufw allow $HTTP_PORT/tcp
+                ufw allow $HTTPS_PORT/tcp
+                echo -e "${GREEN}UFW rules added for ports $HTTP_PORT and $HTTPS_PORT${NC}"
             fi
             ;;
         centos|rhel|fedora)
             if command -v firewall-cmd &> /dev/null; then
-                firewall-cmd --permanent --add-port=8443/tcp
+                firewall-cmd --permanent --add-port=$HTTP_PORT/tcp
+                firewall-cmd --permanent --add-port=$HTTPS_PORT/tcp
                 firewall-cmd --reload
-                echo -e "${GREEN}Firewall rule added for port 8443${NC}"
+                echo -e "${GREEN}Firewall rules added for ports $HTTP_PORT and $HTTPS_PORT${NC}"
             fi
             ;;
     esac
@@ -177,27 +203,37 @@ start_service() {
 
 # Main installation flow
 main() {
-    detect_distro
-    install_nodejs
-    clone_repository
-    install_dependencies
-    generate_certificates
-    create_service
-    configure_firewall
-    start_service
-    
-    echo ""
-    echo -e "${GREEN}======================================${NC}"
-    echo -e "${GREEN}Installation completed successfully!${NC}"
-    echo -e "${GREEN}======================================${NC}"
-    echo ""
-    echo "Service: $SERVICE_NAME"
-    echo "Status: systemctl status $SERVICE_NAME"
-    echo "Logs: journalctl -u $SERVICE_NAME -f"
-    echo "Server: wss://localhost:8443"
-    echo ""
-    echo "Certificate location: $INSTALL_DIR/server/certs/"
-    echo ""
+    if [ "$UPDATE_ONLY" = true ]; then
+        # Only update service configuration
+        echo -e "${YELLOW}Updating service configuration only...${NC}"
+        detect_distro
+        create_service
+        echo -e "${GREEN}Service configuration updated${NC}"
+    else
+        # Full installation
+        detect_distro
+        install_nodejs
+        clone_repository
+        install_dependencies
+        generate_certificates
+        create_service
+        configure_firewall
+        start_service
+        
+        echo ""
+        echo -e "${GREEN}======================================${NC}"
+        echo -e "${GREEN}Installation completed successfully!${NC}"
+        echo -e "${GREEN}======================================${NC}"
+        echo ""
+        echo "Service: $SERVICE_NAME"
+        echo "Status: systemctl status $SERVICE_NAME"
+        echo "Logs: journalctl -u $SERVICE_NAME -f"
+        echo "HTTP Server: http://localhost:$HTTP_PORT"
+        echo "HTTPS Server: https://localhost:$HTTPS_PORT"
+        echo ""
+        echo "Certificate location: $INSTALL_DIR/server/certs/"
+        echo ""
+    fi
 }
 
 main

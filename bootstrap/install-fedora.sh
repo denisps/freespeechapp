@@ -3,6 +3,8 @@
 
 set -e
 
+NODE_VERSION="18"
+
 echo "FreeSpeechApp Bootstrap for Fedora"
 echo "==================================="
 
@@ -13,8 +15,14 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Install prerequisites
-dnf install -y curl git openssl
+dnf install -y curl git openssl ca-certificates
 
-# Run main installation script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-bash "$SCRIPT_DIR/install.sh"
+# Install Node.js from NodeSource
+if ! command -v node &> /dev/null; then
+    echo "Installing Node.js ${NODE_VERSION}..."
+    curl -fsSL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | bash -
+    dnf install -y nodejs
+    echo "Node.js $(node --version) installed"
+else
+    echo "Node.js $(node --version) already installed"
+fi
