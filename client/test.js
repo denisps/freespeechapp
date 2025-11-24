@@ -54,12 +54,27 @@ const MockPeerConnection = {
             }
         }, 50);
         
+        // Generate mock ICE candidates
+        const mockIceCandidates = [
+            {
+                candidate: 'candidate:1 1 udp 2122260223 192.168.1.100 54321 typ host',
+                sdpMLineIndex: 0,
+                sdpMid: '0'
+            },
+            {
+                candidate: 'candidate:2 1 udp 2122194687 10.0.0.5 54322 typ host',
+                sdpMLineIndex: 0,
+                sdpMid: '0'
+            }
+        ];
+        
         return {
             connection: { state: 'mock-connected' },
             localDescription: {
                 type: 'answer',
                 sdp: 'mock-sdp-answer'
             },
+            iceCandidates: mockIceCandidates,
             dataChannel: mockChannel,
             close: () => console.log('Mock connection closed')
         };
@@ -1031,6 +1046,140 @@ async function runTests() {
         }
         
         output += '</div>'; // End WebRTC section
+        
+        // === ICE Candidate Gathering Tests ===
+        output += '<div class="test-section"><h3>ICE Candidate Gathering</h3>';
+        
+        // Test 37: Mock peer connection returns ICE candidates
+        try {
+            const mockPeerInfo = {
+                id: 'ice-test-peer',
+                sdp: { type: 'offer', sdp: 'mock-sdp' },
+                iceCandidates: []
+            };
+            
+            const result = await MockPeerConnection.create(mockPeerInfo, null, null);
+            
+            if (result.iceCandidates && 
+                Array.isArray(result.iceCandidates) && 
+                result.iceCandidates.length > 0) {
+                output += '<div class="test-passed">✓ Mock peer connection returns ICE candidates</div>';
+                passCount++;
+            } else {
+                throw new Error('No ICE candidates returned');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Mock peer connection ICE candidates: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 38: ICE candidates have correct structure
+        try {
+            const mockPeerInfo = {
+                id: 'ice-structure-test',
+                sdp: { type: 'offer', sdp: 'mock-sdp' },
+                iceCandidates: []
+            };
+            
+            const result = await MockPeerConnection.create(mockPeerInfo, null, null);
+            const candidate = result.iceCandidates[0];
+            
+            if (candidate && 
+                typeof candidate.candidate === 'string' &&
+                typeof candidate.sdpMLineIndex === 'number' &&
+                typeof candidate.sdpMid === 'string') {
+                output += '<div class="test-passed">✓ ICE candidates have correct structure</div>';
+                passCount++;
+            } else {
+                throw new Error('Invalid ICE candidate structure');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ ICE candidate structure: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 39: connectToPeer stores ICE candidates in peer object
+        try {
+            const initialPeerCount = appState.peers.length;
+            
+            const testPeerInfo = {
+                id: 'ice-storage-test-peer',
+                sdp: { type: 'offer', sdp: 'test-sdp' },
+                iceCandidates: []
+            };
+            
+            await connectToPeer(testPeerInfo);
+            
+            // Give connection time to establish
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            const newPeer = appState.peers.find(p => p.id === 'ice-storage-test-peer');
+            
+            if (newPeer && 
+                newPeer.iceCandidates && 
+                Array.isArray(newPeer.iceCandidates) &&
+                newPeer.iceCandidates.length > 0) {
+                output += '<div class="test-passed">✓ connectToPeer stores ICE candidates in peer object</div>';
+                passCount++;
+                
+                // Cleanup
+                appState.peers = appState.peers.filter(p => p.id !== 'ice-storage-test-peer');
+            } else {
+                throw new Error('ICE candidates not stored in peer object');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ connectToPeer ICE candidate storage: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        // Test 40: Answer message includes ICE candidates
+        try {
+            let answerMessageReceived = null;
+            
+            // Mock the gateway frame postMessage
+            const originalGatewayFrame = appState.gatewayFrame;
+            appState.gatewayFrame = {
+                contentWindow: {
+                    postMessage: (message, origin) => {
+                        if (message.type === 'answer') {
+                            answerMessageReceived = message;
+                        }
+                    }
+                }
+            };
+            
+            const testPeerInfo = {
+                id: 'ice-message-test-peer',
+                sdp: { type: 'offer', sdp: 'test-sdp' },
+                iceCandidates: []
+            };
+            
+            await connectToPeer(testPeerInfo);
+            
+            // Give connection time to establish
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Restore original gateway frame
+            appState.gatewayFrame = originalGatewayFrame;
+            
+            if (answerMessageReceived && 
+                answerMessageReceived.iceCandidates &&
+                Array.isArray(answerMessageReceived.iceCandidates) &&
+                answerMessageReceived.iceCandidates.length > 0) {
+                output += '<div class="test-passed">✓ Answer message includes ICE candidates</div>';
+                passCount++;
+                
+                // Cleanup
+                appState.peers = appState.peers.filter(p => p.id !== 'ice-message-test-peer');
+            } else {
+                throw new Error('Answer message does not include ICE candidates');
+            }
+        } catch (e) {
+            output += `<div class="test-failed">✗ Answer message ICE candidates: ${e.message}</div>`;
+            failCount++;
+        }
+        
+        output += '</div>'; // End ICE candidate section
         
         // === Summary ===
         const totalTests = passCount + failCount;

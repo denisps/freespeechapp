@@ -474,6 +474,7 @@
                 };
                 
                 const pc = new RTCPeerConnection(config);
+                const iceCandidates = [];
                 
                 // Set up connection state change handler
                 pc.onconnectionstatechange = () => {
@@ -489,12 +490,19 @@
                     }
                 };
                 
+                // Gather ICE candidates
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        iceCandidates.push(event.candidate.toJSON());
+                    }
+                };
+                
                 // Set remote description from peer's SDP offer
                 if (peerInfo.sdp) {
                     await pc.setRemoteDescription(new RTCSessionDescription(peerInfo.sdp));
                 }
                 
-                // Add ICE candidates
+                // Add ICE candidates from offering peer
                 if (peerInfo.iceCandidates && Array.isArray(peerInfo.iceCandidates)) {
                     for (const candidate of peerInfo.iceCandidates) {
                         try {
@@ -509,9 +517,21 @@
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 
+                // Wait for ICE gathering to complete or timeout after 3 seconds
+                await new Promise((resolve) => {
+                    const timeout = setTimeout(resolve, 3000);
+                    pc.onicegatheringstatechange = () => {
+                        if (pc.iceGatheringState === 'complete') {
+                            clearTimeout(timeout);
+                            resolve();
+                        }
+                    };
+                });
+                
                 return {
                     connection: pc,
                     localDescription: pc.localDescription,
+                    iceCandidates: iceCandidates,
                     close: () => pc.close()
                 };
             }
@@ -856,17 +876,19 @@
                     id: peerInfo.id,
                     connection: result.connection,
                     dataChannel: result.dataChannel || null,
-                    localDescription: result.localDescription
+                    localDescription: result.localDescription,
+                    iceCandidates: result.iceCandidates || []
                 };
                 
                 appState.peers.push(peer);
                 
-                // Send answer back to gateway
+                // Send answer and ICE candidates back to gateway
                 if (result.localDescription && appState.gatewayFrame) {
                     appState.gatewayFrame.contentWindow.postMessage({
                         type: 'answer',
                         peerId: peerInfo.id,
-                        answer: result.localDescription
+                        answer: result.localDescription,
+                        iceCandidates: result.iceCandidates || []
                     }, '*');
                 }
             } catch (err) {
