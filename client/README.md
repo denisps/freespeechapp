@@ -9,8 +9,8 @@ Secure, privacy-focused communication client built on cryptographic principles.
 - **Identity Management**: Identity file generation with encrypted keys, password-based encryption/decryption, handles both empty and non-empty identity-data
 - **UI Components**: Four operational modes with Stateful App as first section when identity exists
 - **Gateway Management**: Gateway configuration, localStorage persistence, iframe lifecycle, merge/deduplication from multiple sources
-- **WebRTC Peer Connection**: Modular architecture with actual RTCPeerConnection implementation and mock for testing
-- **Testing Framework**: Comprehensive test suite with 36 test cases covering cryptography, encoding, identity, gateway communication, gateway merge/deduplication, WebRTC modular implementation, and app verification
+- **WebRTC Peer Connection**: Modular architecture with actual RTCPeerConnection implementation and mock for testing, full ICE candidate gathering and exchange
+- **Testing Framework**: Comprehensive test suite with 40 test cases covering cryptography, encoding, identity, gateway communication, gateway merge/deduplication, WebRTC modular implementation, app verification, and ICE candidate handling
 
 ### 🚧 Partially Implemented (Mock/Simplified)
 - **App Signature Verification**: Mock implementation (TODO: Real ECDSA signature verification)
@@ -145,13 +145,18 @@ The client uses a modular architecture for WebRTC peer connections, allowing swi
 **Actual Implementation (Production):**
 - `ActualPeerConnection` - Uses real `RTCPeerConnection` API
 - Full SDP (Session Description Protocol) exchange
-- ICE (Interactive Connectivity Establishment) candidate handling
+- ICE (Interactive Connectivity Establishment) candidate gathering and exchange
+- Gathers local ICE candidates automatically during connection setup
+- Waits for ICE gathering completion (or 3-second timeout)
+- Sends collected ICE candidates to gateway for peer-to-peer NAT traversal
+- Receives and processes remote ICE candidates from offering peer
 - Creates RTCDataChannel for P2P communication
 - Proper connection state management
 
 **Mock Implementation (Testing):**
 - `MockPeerConnection` - Defined in `test.js` for testing
 - Simulates connection behavior without actual WebRTC
+- Returns mock ICE candidates with realistic structure
 - Allows testing without network dependencies
 - Injected via `appState.peerConnectionFactory`
 
@@ -162,6 +167,33 @@ appState.peerConnectionFactory = ActualPeerConnection;
 
 // Testing (test.js)
 appState.peerConnectionFactory = MockPeerConnection;
+```
+
+**ICE Candidate Flow:**
+1. Peer A creates offer with ICE candidates → sends to gateway
+2. Gateway relays offer to Client
+3. Client creates answer and gathers ICE candidates
+4. Client sends answer + ICE candidates to gateway
+5. Gateway relays answer to Peer A
+6. Both peers now have each other's ICE candidates
+7. WebRTC uses ICE candidates to establish direct P2P connection (NAT traversal)
+
+**Peer Object Structure:**
+```javascript
+{
+  id: "peer-id",
+  connection: RTCPeerConnection,
+  dataChannel: RTCDataChannel,
+  localDescription: RTCSessionDescription,
+  iceCandidates: [
+    {
+      candidate: "candidate:1 1 udp 2122260223 192.168.1.100 54321 typ host",
+      sdpMLineIndex: 0,
+      sdpMid: "0"
+    },
+    ...
+  ]
+}
 ```
 
 ## App Signature Verification Architecture
@@ -268,14 +300,15 @@ When user starts the app (either stateless or stateful mode):
 1. Client → Gateway: Ready
 2. Gateway → Client: Display captcha/ad
 3. User completes captcha/views ad
-4. Gateway → Client: Peer list (SDP + ICE candidates)
-5. Client → Gateway: Own SDP + ICE candidates for each peer
-6. Gateway relays connection info
-7. Client ↔ Peers: WebRTC DataChannel established
-8. Client downloads App Content from peers (minimum 3 peers)
-9. Client verifies App Content signature with App ID
-10. Gateway section hidden automatically, status shows peer count
-11. User can click "Close Gateway" button in toolbar to remove gateway section
+4. Gateway → Client: Peer list (SDP offers + ICE candidates)
+5. Client creates answers and gathers ICE candidates
+6. Client → Gateway: Own SDP answers + ICE candidates for each peer
+7. Gateway relays connection info between peers
+8. Client ↔ Peers: WebRTC DataChannel established using ICE candidates for NAT traversal
+9. Client downloads App Content from peers (minimum 3 peers)
+10. Client verifies App Content signature with App ID
+11. Gateway section hidden automatically, status shows peer count
+12. User can click "Close Gateway" button in toolbar to remove gateway section
 ```
 
 **Peer List Message Format:**
@@ -286,7 +319,31 @@ When user starts the app (either stateless or stateful mode):
     {
       id: "hash(sdp+ice)",
       sdp: {...},
-      iceCandidates: [...]
+      iceCandidates: [
+        {
+          candidate: "candidate:1 1 udp 2122260223 192.168.1.100 54321 typ host",
+          sdpMLineIndex: 0,
+          sdpMid: "0"
+        },
+        ...
+      ]
+    },
+    ...
+  ]
+}
+```
+
+**Answer Message Format:**
+```javascript
+{
+  type: "answer",
+  peerId: "peer-id",
+  answer: RTCSessionDescription,
+  iceCandidates: [
+    {
+      candidate: "candidate:2 1 udp 2122194687 10.0.0.5 54322 typ host",
+      sdpMLineIndex: 0,
+      sdpMid: "0"
     },
     ...
   ]
@@ -428,7 +485,7 @@ The testing framework includes a mock gateway for local development and testing:
 11. Tests WebRTC modular implementation
 12. Display comprehensive test results with pass/fail summary
 
-**Test Categories:** ✅ IMPLEMENTED (36 Tests Total)
+**Test Categories:** ✅ IMPLEMENTED (40 Tests Total)
 1. **Cryptographic Operations** (5 tests)
    - ECDSA key pair generation (P-256 curve)
    - AES-256 key generation
@@ -484,6 +541,12 @@ The testing framework includes a mock gateway for local development and testing:
     - Mock peer connection creates connection with callbacks
     - connectToPeer uses peer connection factory
     - Actual peer connection implementation available
+
+11. **ICE Candidate Gathering** (4 tests)
+    - Mock peer connection returns ICE candidates
+    - ICE candidates have correct structure (candidate, sdpMLineIndex, sdpMid)
+    - connectToPeer stores ICE candidates in peer object
+    - Answer message includes ICE candidates for gateway relay
 
 **Mock App Content Structure:**
 ```javascript
