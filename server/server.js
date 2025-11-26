@@ -4,6 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
+// Version info
+const SERVER_VERSION = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf8').trim();
+const PROTOCOL_VERSION = fs.readFileSync(path.join(__dirname, '..', 'PROTOCOL_VERSION'), 'utf8').trim();
+
 const HTTP_PORT = process.env.HTTP_PORT || 80;
 const HTTPS_PORT = process.env.HTTPS_PORT || 443;
 const USE_HTTPS = process.env.USE_HTTPS !== 'false';
@@ -208,6 +212,8 @@ function handleRequest(req, res) {
       sendJSON(res, 200, {
         status: 'healthy',
         timestamp: new Date().toISOString(),
+        version: SERVER_VERSION,
+        protocolVersion: PROTOCOL_VERSION,
         clients: clients.size,
         messages: messages.length,
         apiEnabled: API_ENABLED
@@ -355,10 +361,12 @@ const PORT = USE_HTTPS && serverOptions.cert ? HTTPS_PORT : HTTP_PORT;
 
 server.listen(PORT, () => {
   const protocol = USE_HTTPS && serverOptions.cert ? 'https' : 'http';
-  console.log(`FreeSpeechApp server listening on port ${PORT}`);
-  console.log(`Protocol: ${protocol}`);
+  console.log(`FreeSpeechApp Server v${SERVER_VERSION}`);
+  console.log(`Protocol: v${PROTOCOL_VERSION}`);
+  console.log(`Server protocol: ${protocol}`);
+  console.log(`Listening on port ${PORT}`);
   console.log(`Health check: ${protocol}://localhost:${PORT}/health`);
-  console.log('Cloudflare compatible - using HTTP polling');
+  console.log('Cloudflare compatible - HTTP polling');
 });
 
 // Graceful shutdown

@@ -340,6 +340,9 @@ cd server && npm test          # Server tests (3 tests)
 
 ## Important Files & Documentation
 
+- `VERSIONING.md` - **Read for release process** and version strategy
+- `CHANGELOG.md` - Update with all changes before release
+- `VERSION`, `client/VERSION`, `server/VERSION`, `PROTOCOL_VERSION` - Version tracking files
 - `ARCHITECTURE_OVERVIEW.md` - **Read this first** for HTTP polling transition details
 - `SECURITY.md` - Security audit results, hardening steps
 - `TESTING.md` - Test suite documentation
@@ -424,6 +427,39 @@ git branch -d feature/descriptive-name
 - ❌ Never commit with failing tests
 - ❌ Never commit work-in-progress code to main
 - ⚠️ Always run `./run-all-tests.sh` before committing
+
+### Versioning & Releases
+
+**Version files to update**:
+```bash
+VERSION                # Overall project version
+client/VERSION         # Client/identity file version
+server/VERSION         # Server version
+PROTOCOL_VERSION       # Gateway protocol version (MAJOR.MINOR only)
+CHANGELOG.md           # Document all changes
+```
+
+**Release process**:
+```bash
+# 1. Update version files
+echo "1.1.0" > VERSION
+echo "1.1.0" > client/VERSION
+# Update others if changed
+
+# 2. Update CHANGELOG.md
+# Add section with all changes
+
+# 3. Run tests
+./run-all-tests.sh
+
+# 4. Commit and tag
+git add -A
+git commit -m "Release v1.1.0: Description"
+git tag v1.1.0 -m "Release notes with gateway operator notice"
+git push origin main --tags
+```
+
+**See `VERSIONING.md` for complete strategy and gateway operator responsibilities.**
 
 ### Code Isolation & Security Requirements
 
