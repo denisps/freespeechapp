@@ -17,8 +17,8 @@ fi
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Config file not found: $CONFIG_FILE"
     echo ""
-    echo "Creating sample config: freespeech-admin.conf.sample"
-    cat > freespeech-admin.conf.sample <<'EOF'
+    echo "Creating config file: $CONFIG_FILE"
+    cat > "$CONFIG_FILE" <<'EOF'
 # FreeSpeechApp Admin Configuration
 SERVER_HOST="your-server.com"  # Use "localhost" for local deployment
 SERVER_USER="root"
@@ -32,7 +32,7 @@ HTTPS_PORT="443"
 INSTALL_DIR="/opt/freespeechapp"
 REPO_URL="https://github.com/denisps/freespeechapp.git"
 EOF
-    echo "Edit freespeech-admin.conf.sample and save as freespeech-admin.conf"
+    echo "Created $CONFIG_FILE - please edit with your server details"
     echo ""
     echo "For local deployment, use: ./admin-deploy.sh --local"
     exit 1

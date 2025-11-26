@@ -364,6 +364,10 @@ async function runTests() {
         
         // Test 11: Gateway Save/Load
         try {
+            // Preserve original data
+            const originalGateways = localStorage.getItem('freespeech-gateways');
+            const originalAppGateways = [...appState.gateways];
+            
             // Reset to known state
             appState.gateways = [];
             
@@ -373,6 +377,14 @@ async function runTests() {
             
             // Check that all test gateways are present (they may be merged with existing)
             const hasAllTestGateways = testGateways.every(gw => appState.gateways.includes(gw));
+            
+            // Restore original data
+            if (originalGateways) {
+                localStorage.setItem('freespeech-gateways', originalGateways);
+            } else {
+                localStorage.removeItem('freespeech-gateways');
+            }
+            appState.gateways = originalAppGateways;
             
             if (hasAllTestGateways) {
                 output += '<div class="test-passed">✓ Gateway save/load from localStorage</div>';
@@ -854,6 +866,10 @@ async function runTests() {
         
         // Test 30: Gateway merge from localStorage and identity-data
         try {
+            // Preserve original data
+            const originalLocalStorage = localStorage.getItem('freespeech-gateways');
+            const originalAppGateways = [...appState.gateways];
+            
             // Setup: Save gateways to localStorage
             const localGateways = ['https://local1.example.com', 'https://local2.example.com'];
             localStorage.setItem('freespeech-gateways', JSON.stringify(localGateways));
@@ -882,8 +898,14 @@ async function runTests() {
             const noDuplicates = appState.gateways.length === new Set(appState.gateways).size;
             const correctCount = appState.gateways.length === 3;
             
-            // Restore original identity data
+            // Restore original data
             identityDataEl.textContent = originalContent;
+            if (originalLocalStorage) {
+                localStorage.setItem('freespeech-gateways', originalLocalStorage);
+            } else {
+                localStorage.removeItem('freespeech-gateways');
+            }
+            appState.gateways = originalAppGateways;
             
             if (hasIdentity1 && hasLocal1 && hasLocal2 && noDuplicates && correctCount) {
                 output += '<div class="test-passed">✓ Gateway merge from localStorage and identity-data</div>';
@@ -925,6 +947,10 @@ async function runTests() {
         
         // Test 32: loadGateways merges with existing
         try {
+            // Preserve original data
+            const originalLocalStorage = localStorage.getItem('freespeech-gateways');
+            const originalAppGateways = [...appState.gateways];
+            
             // Setup initial gateways
             appState.gateways = ['https://freespeechapp.org/'];
             
@@ -936,9 +962,19 @@ async function runTests() {
             loadGateways();
             
             // Verify merge occurred
-            if (appState.gateways.includes('https://freespeechapp.org/') &&
+            const testPassed = appState.gateways.includes('https://freespeechapp.org/') &&
                 appState.gateways.includes('https://stored1.example.com') &&
-                appState.gateways.includes('https://stored2.example.com')) {
+                appState.gateways.includes('https://stored2.example.com');
+            
+            // Restore original data
+            if (originalLocalStorage) {
+                localStorage.setItem('freespeech-gateways', originalLocalStorage);
+            } else {
+                localStorage.removeItem('freespeech-gateways');
+            }
+            appState.gateways = originalAppGateways;
+            
+            if (testPassed) {
                 output += '<div class="test-passed">✓ loadGateways merges with existing gateways</div>';
                 passCount++;
             } else {

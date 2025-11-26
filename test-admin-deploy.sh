@@ -82,7 +82,7 @@ assert_file_exists() {
     fi
 }
 
-# Test 1: Check if script creates sample config when config is missing
+# Test 1: Check if script creates config when config is missing
 test_missing_config() {
     echo ""
     echo "Test 1: Missing config file handling"
@@ -92,14 +92,14 @@ test_missing_config() {
     output=$("$ADMIN_DEPLOY" 2>&1 || true)
     
     assert_contains "$output" "Error: Config file not found" "Should report missing config"
-    assert_file_exists "$TEST_CONFIG_DIR/freespeech-admin.conf.sample" "Should create sample config"
+    assert_file_exists "$TEST_CONFIG_DIR/freespeech-admin.conf" "Should create config file directly"
     
-    # Verify sample config has required fields
-    sample_content=$(cat "$TEST_CONFIG_DIR/freespeech-admin.conf.sample")
-    assert_contains "$sample_content" "SERVER_HOST=" "Sample should contain SERVER_HOST"
-    assert_contains "$sample_content" "SERVER_USER=" "Sample should contain SERVER_USER"
-    assert_contains "$sample_content" "HTTP_PORT=" "Sample should contain HTTP_PORT"
-    assert_contains "$sample_content" "HTTPS_PORT=" "Sample should contain HTTPS_PORT"
+    # Verify config has required fields
+    config_content=$(cat "$TEST_CONFIG_DIR/freespeech-admin.conf")
+    assert_contains "$config_content" "SERVER_HOST=" "Config should contain SERVER_HOST"
+    assert_contains "$config_content" "SERVER_USER=" "Config should contain SERVER_USER"
+    assert_contains "$config_content" "HTTP_PORT=" "Config should contain HTTP_PORT"
+    assert_contains "$config_content" "HTTPS_PORT=" "Config should contain HTTPS_PORT"
 }
 
 # Test 2: Config file loading

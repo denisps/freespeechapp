@@ -21,13 +21,17 @@ Secure, decentralized communication platform for safe messaging over untrusted n
 
 From your local machine, deploy to a remote Linux server:
 
-1. **Create config file:**
+1. **Run deployment script** (creates config on first run):
    ```bash
-   cp freespeech-admin.conf.sample freespeech-admin.conf
+   ./admin-deploy.sh
+   ```
+
+2. **Edit the generated config file:**
+   ```bash
    nano freespeech-admin.conf  # Add your server details
    ```
 
-2. **Deploy:**
+3. **Deploy again:**
    ```bash
    ./admin-deploy.sh
    ```
@@ -65,7 +69,7 @@ See [MANUAL_SETUP.md](MANUAL_SETUP.md) for manual installation instructions.
 
 ## Configuration
 
-Edit `freespeech-admin.conf` to customize:
+Run `./admin-deploy.sh` once to generate `freespeech-admin.conf`, then edit:
 
 ```bash
 SERVER_HOST="your-server.com"

@@ -108,11 +108,16 @@ The client (`client/index.html`) is a **single self-contained HTML file** with f
 {
   "salt": "random-salt",
   "cryptoBox": "encrypted(userIdPrivateKey + aesKey)",
-  "gateways": ["https://gateway1.com", "https://gateway2.com"],
+  "gateways": ["https://user-gateway1.com", "https://user-gateway2.com"],
   "version": "1.0"
 }
 </script>
 ```
+
+**Gateway Configuration**:
+- `https://freespeechapp.org/` - Default fallback gateway (also project homepage)
+- Users should configure their own trusted gateways
+- Demo URLs like `gateway1.com`, `gateway2.com` are for documentation only - never use in tests or production
 
 **Isolation Principle**: User apps run in sandboxed iframes, completely isolated from:
 - Server infrastructure code
@@ -141,6 +146,12 @@ The client (`client/index.html`) is a **single self-contained HTML file** with f
 - **Gateway Isolation** - Each gateway runs in sandboxed iframe with `postMessage` API only
 
 **Security**: Gateways are untrusted - they cannot inject code or access user data. The `sandbox` attribute restricts iframe capabilities.
+
+**Gateway URLs**:
+- Production: Users configure their own trusted gateways
+- Fallback: `https://freespeechapp.org/` (default when no user gateways configured)
+- Testing: Use `mock-gateway.html` for local tests
+- Documentation: Example URLs like `gateway1.example.com` are for illustration only
 
 ### Testing Architecture
 
@@ -174,11 +185,13 @@ node server.js
 ### Remote Deployment
 
 ```bash
-# 1. Create config
-cp freespeech-admin.conf.sample freespeech-admin.conf
-# Edit: SERVER_HOST, SERVER_USER, etc.
+# 1. Generate config (first run)
+./admin-deploy.sh
 
-# 2. Deploy
+# 2. Edit config with your server details
+nano freespeech-admin.conf
+
+# 3. Deploy
 ./admin-deploy.sh
 
 # Updates: run again to pull latest, restart service
@@ -247,6 +260,12 @@ function test_new_feature() {
 
 // Run via "Run Tests" button or: runTests()
 ```
+
+**Test Data Preservation**:
+- Always preserve existing localStorage data before modifying in tests
+- Restore original values after test completes
+- Use `test.example.com` domains for test gateway URLs (never production URLs)
+- Never test for demo/documentation URLs (`gateway1.com`, `gateway2.com`)
 
 ## Configuration & Environment
 
@@ -349,7 +368,7 @@ cd server && npm test          # Server tests (3 tests)
 
 ### Critical Workflow: Sync Specs → Tests → Code → Commits
 
-⚠️ **MANDATORY BEFORE COMMITTING TO MAIN**:
+⚠️ **MANDATORY BEFORE COMMITTING**:
 
 ```bash
 # 1. Update specs in markdown files
@@ -359,10 +378,52 @@ cd server && npm test          # Server tests (3 tests)
 ./run-all-tests.sh
 
 # 5. Verify all tests pass
-# 6. Commit to main ONLY if tests pass
+# 6. Commit ONLY if tests pass
 ```
 
-**Never commit to main with failing tests** - this breaks the deployment pipeline.
+**Never commit with failing tests** - this breaks the deployment pipeline.
+
+### Branch Strategy & Auto-Commit
+
+**For small changes** (bug fixes, doc updates, minor tweaks):
+```bash
+# Make changes on main branch
+./run-all-tests.sh
+# If tests pass, commit automatically:
+git add -A
+git commit -m "Brief description of changes"
+git push origin main
+```
+
+**For major work** (new features, significant refactoring):
+```bash
+# 1. Create feature branch
+git checkout -b feature/descriptive-name
+
+# 2. Make changes incrementally
+# 3. Run tests after each logical change
+./run-all-tests.sh
+
+# 4. Commit when tests pass
+git add -A
+git commit -m "Descriptive commit message"
+
+# 5. When feature complete, merge to main
+git checkout main
+git merge feature/descriptive-name
+git push origin main
+
+# 6. Delete feature branch
+git branch -d feature/descriptive-name
+```
+
+**Auto-commit rules**:
+- ✅ Auto-commit when all tests pass (91/91)
+- ✅ Include all changed files (`git add -A`)
+- ✅ Write descriptive commit messages explaining what changed
+- ❌ Never commit with failing tests
+- ❌ Never commit work-in-progress code to main
+- ⚠️ Always run `./run-all-tests.sh` before committing
 
 ### Code Isolation & Security Requirements
 
